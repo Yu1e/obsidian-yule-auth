@@ -1,0 +1,38 @@
+{
+  "name": "obsidian-authorship",
+  "version": "0.1.0",
+  "description": "Track and visualize text authorship in Obsidian — see what you typed vs what you pasted",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/"
+  },
+  "keywords": [
+    "obsidian",
+    "authorship",
+    "ai",
+    "tracking",
+    "markdown-annotations"
+  ],
+  "author": "rflpazini",
+  "license": "MIT",
+  "devDependencies": {
+    "@codemirror/state": "^6.4.0",
+    "@codemirror/view": "^6.26.0",
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^9.0.0",
+    "obsidian": "latest",
+    "tslib": "^2.6.0",
+    "typescript": "^5.5.0",
+    "vitest": "^3.0.0"
+  }
+}

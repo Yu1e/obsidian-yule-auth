@@ -1,0 +1,24 @@
+.authorship-ai {
+  background: linear-gradient(
+    90deg,
+    rgba(167, 139, 250, 0.13),
+    rgba(244, 114, 182, 0.13),
+    rgba(56, 189, 248, 0.13)
+  );
+  border-radius: 2px;
+}
+
+.authorship-pasted {
+  opacity: 0.75;
+  border-bottom: 1px dashed var(--text-muted);
+}
+
+.authorship-reference {
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.authorship-status-bar {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
