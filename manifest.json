@@ -1,9 +1,9 @@
 {
-  "id": "obsidian-authorship",
+  "id": "authorship",
   "name": "Authorship",
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
-  "description": "Track and visualize text authorship — see what you typed vs what you pasted, inspired by iA Writer's Authorship feature",
+  "description": "Track and visualize text authorship in the editor. Distinguishes typed, pasted, AI-generated, and reference text with color-coded highlights.",
   "author": "rflpazini",
   "authorUrl": "https://github.com/rflpazini",
   "isDesktopOnly": false
