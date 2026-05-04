@@ -1,10 +1,11 @@
 {
-  "id": "authorship",
-  "name": "Authorship",
-  "version": "0.1.0",
+  "id": "yule-auth",
+  "name": "yule-auth",
+  "version": "2.0.0",
   "minAppVersion": "1.5.0",
-  "description": "Track and visualize text authorship in the editor. Distinguishes typed, pasted, AI-generated, and reference text with color-coded highlights.",
-  "author": "rflpazini",
-  "authorUrl": "https://github.com/rflpazini",
+  "description": "Track and visualize text authorship — your own, AI-generated, or other human text. Stores authorship data in a separate JSON file, keeps your notes clean. Inspired by rflpazini's Obsidian Authorship plugin.",
+  "author": "yule-auth",
+  "authorUrl": "https://github.com/rflpazini/obsidian-authorship",
   "isDesktopOnly": false
 }
+
