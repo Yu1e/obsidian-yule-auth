@@ -1,9 +1,9 @@
 /* ============================================================
    yule-auth — Authorship highlighting plugin for Obsidian
-   Styles are partially overridden at runtime by applyCustomCSS()
+   Базовые стили; runtime-стили перегенерируются через applyCustomCSS()
    ============================================================ */
 
-/* ── AI text: gradient background (colours injected via JS) ── */
+/* ── AI text ── */
 .yule-auth-ai {
   background: linear-gradient(
     90deg,
@@ -14,15 +14,21 @@
   border-radius: 2px;
 }
 
-/* ── Self text: subtle green underline (style injected via JS) ── */
+/* ── Self text ── */
 .yule-auth-self {
   border-bottom: 2px solid rgba(52, 211, 153, 0.55);
 }
 
-/* ── Other (foreign human) text: italic + dimmed ── */
+/* ── Other (foreign human) text ── */
 .yule-auth-other {
   font-style: italic;
-  opacity: 0.65;
+  opacity: 0.72;
+}
+
+/* ── Exception within a noteClass note ── */
+.yule-auth-exception {
+  outline: 2px dashed rgba(255, 255, 255, 0.30);
+  border-radius: 2px;
 }
 
 /* ============================================================
@@ -39,7 +45,6 @@
   color: var(--text-normal);
 }
 
-/* Short preview of pasted text */
 .yule-auth-modal .yule-modal-preview {
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
@@ -63,7 +68,6 @@
   border-radius: 0 0 6px 6px;
 }
 
-/* Button row */
 .yule-auth-modal .yule-modal-buttons {
   display: flex;
   gap: 0.55rem;
@@ -95,19 +99,19 @@
   transform: translateY(0);
 }
 
-/* Self — green tint */
+/* Self — green */
 .yule-auth-modal .yule-modal-btn.btn-self {
   border-color: rgba(52, 211, 153, 0.55);
   background:   rgba(52, 211, 153, 0.09);
 }
 
-/* AI — purple tint */
+/* AI — purple */
 .yule-auth-modal .yule-modal-btn.btn-ai {
   border-color: rgba(167, 139, 250, 0.55);
   background:   rgba(167, 139, 250, 0.09);
 }
 
-/* Other — amber tint */
+/* Other — amber */
 .yule-auth-modal .yule-modal-btn.btn-other {
   border-color: rgba(251, 146, 60, 0.55);
   background:   rgba(251, 146, 60, 0.09);
@@ -118,7 +122,6 @@
   opacity: 0.65;
 }
 
-/* Footer with quick-disable links */
 .yule-auth-modal .yule-modal-footer {
   display: flex;
   align-items: center;

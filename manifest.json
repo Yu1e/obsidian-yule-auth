@@ -1,11 +1,10 @@
 {
   "id": "yule-auth",
   "name": "yule-auth",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "minAppVersion": "1.5.0",
-  "description": "Track and visualize text authorship — your own, AI-generated, or other human text. Stores authorship data in a separate JSON file, keeps your notes clean. Inspired by rflpazini's Obsidian Authorship plugin.",
+  "description": "Track and visualize text authorship — your own, AI-generated, or other human text. Anchor-based fragment tracking, per-note class, tag auto-mark without dialogs.",
   "author": "yule-auth",
-  "authorUrl": "https://github.com/rflpazini/obsidian-authorship",
+  "authorUrl": "https://github.com/Yu1e/obsidian-yule-auth",
   "isDesktopOnly": false
 }
-

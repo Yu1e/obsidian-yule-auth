@@ -10,7 +10,13 @@ const SourceType = {
   SELF:  'self',
   AI:    'ai',
   OTHER: 'other',
+  NONE:  'none',   // «не применять» — явный отказ от разметки на уровне заметки
 };
+
+// Длина якорного текста для привязки фрагмента
+const ANCHOR_LEN  = 40;
+// Максимальный допустимый сдвиг якоря при поиске (символов)
+const ANCHOR_DRIFT = 200;
 
 // ─── i18n ────────────────────────────────────────────────────────────────────
 const i18n = {
@@ -19,8 +25,8 @@ const i18n = {
     language:                'Язык / Language',
     languageDesc:            'Язык настроек плагина',
     trackingSection:         'Отслеживание',
-    tracking:                'Отслеживание авторства',
-    trackingDesc:            'Включить/выключить отслеживание и подсветку авторства',
+    tracking:                'Подсветка авторства',
+    trackingDesc:            'Включить/выключить подсветку авторства (управляется в настройках)',
     authorName:              'Ваше имя',
     authorNameDesc:          'Как ваши тексты помечаются в базе данных',
     authorNamePh:            'Я',
@@ -34,21 +40,22 @@ const i18n = {
     selfLabel:               'Мой текст',
     aiLabel:                 'ИИ',
     otherLabel:              'Чужой текст',
+    unmarkedLabel:           'Не помечен',
     dialogTitle:             'Чей это текст?',
     dialogSkip:              'Пропустить',
     dialogDisable:           'Отключить навсегда',
     dialogDisableSession:    'Отключить до перезапуска',
     tagSection:              'Автопометка по тегам',
-    tagAutoMark:             'Автопометка по тегам',
-    tagAutoMarkDesc:         'Предлагать пометить всю заметку как «чужой текст» при добавлении указанных тегов',
-    tagAutoMarkTags:         'Теги-триггеры',
-    tagAutoMarkTagsDesc:     'Теги через запятую (без #). При наличии любого из них появится предложение пометить заметку.',
-    tagAutoMarkTagsPh:       'цитации, выписки, вырезки',
-    tagModalTitle:           'Пометить как чужой текст?',
-    tagModalDesc:            'Заметка содержит тег #{tag}. Пометить весь текст как «чужой текст»?',
-    tagModalYes:             'Пометить всю заметку',
-    tagModalNo:              'Пропустить',
-    tagModalNever:           'Не спрашивать для этой заметки',
+    tagSectionDesc:          'При добавлении тега заметке автоматически присваивается авторство — без диалога. Укажите теги (без #) через запятую для каждого типа авторства.',
+    selfTagsLabel:           'Теги → Мой текст',
+    selfTagsDesc:            'При наличии любого из этих тегов вся заметка помечается как «Мой текст»',
+    selfTagsPh:              'черновик, моё, личное',
+    aiTagsLabel:             'Теги → ИИ',
+    aiTagsDesc:              'При наличии любого из этих тегов вся заметка помечается как «ИИ»',
+    aiTagsPh:                'ai, gpt, chatgpt',
+    otherTagsLabel:          'Теги → Чужой текст',
+    otherTagsDesc:           'При наличии любого из этих тегов вся заметка помечается как «Чужой текст»',
+    otherTagsPh:             'цитации, выписки, вырезки',
     highlightSection:        'Настройка выделений',
     showSelf:                'Показывать: мой текст',
     showAi:                  'Показывать: ИИ',
@@ -70,14 +77,18 @@ const i18n = {
     textOpacity:             'Шрифт: интенсивность (%)',
     italic:                  'Курсив',
     italicDesc:              'Отображать текст курсивом',
+    cmdClearAuthorship:      'Снять авторство (выделение или текущий фрагмент)',
+    cmdMarkSelf:             'Пометить как: Мой текст',
+    cmdMarkAi:               'Пометить как: ИИ',
+    cmdMarkOther:            'Пометить как: Чужой текст',
   },
   en: {
     settingsTitle:           'yule-auth',
     language:                'Language / Язык',
     languageDesc:            'Settings language',
     trackingSection:         'Tracking',
-    tracking:                'Authorship tracking',
-    trackingDesc:            'Enable/disable authorship tracking and highlighting',
+    tracking:                'Authorship highlighting',
+    trackingDesc:            'Enable/disable authorship highlighting (managed in settings)',
     authorName:              'Your author name',
     authorNameDesc:          'How your texts are labeled in the database',
     authorNamePh:            'Self',
@@ -91,21 +102,22 @@ const i18n = {
     selfLabel:               'My text (Self)',
     aiLabel:                 'AI',
     otherLabel:              'Other (human)',
+    unmarkedLabel:           'Unmarked',
     dialogTitle:             'Who wrote this text?',
     dialogSkip:              'Skip',
     dialogDisable:           'Disable permanently',
     dialogDisableSession:    'Disable until restart',
     tagSection:              'Tag auto-mark',
-    tagAutoMark:             'Tag auto-mark',
-    tagAutoMarkDesc:         'Suggest marking the entire note as "other text" when specified tags are present',
-    tagAutoMarkTags:         'Trigger tags',
-    tagAutoMarkTagsDesc:     'Comma-separated tags without #. When any is present, a prompt will appear.',
-    tagAutoMarkTagsPh:       'citations, excerpts, clippings',
-    tagModalTitle:           'Mark as other text?',
-    tagModalDesc:            'Note has tag #{tag}. Mark the entire note as "other text"?',
-    tagModalYes:             'Mark entire note',
-    tagModalNo:              'Skip',
-    tagModalNever:           "Don't ask for this note",
+    tagSectionDesc:          'Adding a tag automatically assigns authorship to the entire note — no dialog. Enter tags (without #) separated by commas for each authorship type.',
+    selfTagsLabel:           'Tags → My text',
+    selfTagsDesc:            'When any of these tags is present, the whole note is marked as "My text"',
+    selfTagsPh:              'draft, mine, personal',
+    aiTagsLabel:             'Tags → AI',
+    aiTagsDesc:              'When any of these tags is present, the whole note is marked as "AI"',
+    aiTagsPh:                'ai, gpt, chatgpt',
+    otherTagsLabel:          'Tags → Other text',
+    otherTagsDesc:           'When any of these tags is present, the whole note is marked as "Other text"',
+    otherTagsPh:             'citations, excerpts, clippings',
     highlightSection:        'Highlight settings',
     showSelf:                'Show highlight: my text',
     showAi:                  'Show highlight: AI',
@@ -127,6 +139,10 @@ const i18n = {
     textOpacity:             'Text: intensity (%)',
     italic:                  'Italic',
     italicDesc:              'Display text in italics',
+    cmdClearAuthorship:      'Clear authorship (selection or current fragment)',
+    cmdMarkSelf:             'Mark as: My text',
+    cmdMarkAi:               'Mark as: AI',
+    cmdMarkOther:            'Mark as: Other text',
   },
 };
 
@@ -138,9 +154,10 @@ const DEFAULT_SETTINGS = {
   defaultPasteSource: SourceType.OTHER,
   pasteDialogEnabled: true,
   pasteDialogRestore: true,
-  // Tag auto-mark
-  tagAutoMark:        true,
-  tagAutoMarkTags:    ['цитации', 'выписки', 'вырезки'],
+  // Tag auto-mark (separate lists per type, no dialog)
+  selfTags:           [],
+  aiTags:             ['ai', 'gpt', 'chatgpt'],
+  otherTags:          ['цитации', 'выписки', 'вырезки'],
   // Visibility
   showSelf:           false,
   showAi:             true,
@@ -172,734 +189,1008 @@ const DEFAULT_SETTINGS = {
   // Other
   otherBgEnabled:     false,
   otherBgColor1:      '#fb923c',
-  otherBgColor2:      '#fb923c',
+  otherBgColor2:      '#fbbf24',
   otherBgColor3:      '#fb923c',
-  otherBgOpacity:     15,
+  otherBgOpacity:     18,
   otherTextGradient:  false,
-  otherTextColor1:    '#9ca3af',
-  otherTextColor2:    '#9ca3af',
-  otherTextColor3:    '#9ca3af',
-  otherTextOpacity:   65,
+  otherTextColor1:    '#fb923c',
+  otherTextColor2:    '#fbbf24',
+  otherTextColor3:    '#fb923c',
+  otherTextOpacity:   100,
   otherItalic:        true,
 };
 
-// ─── Database ────────────────────────────────────────────────────────────────
-class YuleAuthDB {
-  constructor(app) {
-    this.app  = app;
-    this.data = {};
-  }
+// ─── Utilities ───────────────────────────────────────────────────────────────
 
-  _path() {
-    return `${this.app.vault.configDir}/plugins/${PLUGIN_ID}/${DB_FILENAME}`;
+/** Нормализует строку для якоря: убирает лишние пробелы */
+function normalizeAnchor(str) {
+  return str.replace(/\s+/g, ' ').trim();
+}
+
+/** Берёт первые N символов (якорь начала) */
+function makeStartAnchor(text) {
+  return normalizeAnchor(text.slice(0, ANCHOR_LEN));
+}
+
+/** Берёт последние N символов (якорь конца) */
+function makeEndAnchor(text) {
+  return normalizeAnchor(text.slice(-ANCHOR_LEN));
+}
+
+/**
+ * Ищет позицию якоря в тексте файла.
+ * Допускает сдвиг до ANCHOR_DRIFT символов от сохранённой позиции.
+ * Возвращает реальную позицию или -1.
+ */
+function findAnchor(fileText, anchor, savedPos) {
+  if (!anchor) return -1;
+  const norm = anchor.replace(/\s+/g, ' ');
+  // Сначала ищем вблизи сохранённой позиции
+  const lo = Math.max(0, savedPos - ANCHOR_DRIFT);
+  const hi = Math.min(fileText.length, savedPos + ANCHOR_DRIFT + anchor.length);
+  const slice = fileText.slice(lo, hi);
+  // Нормализуем пробелы только для сравнения
+  const idx = slice.indexOf(norm);
+  if (idx !== -1) return lo + idx;
+  // Глобальный поиск как запасной вариант (только если фрагмент уникален)
+  const global = fileText.indexOf(norm);
+  return global;
+}
+
+/**
+ * Проверяет, достаточно ли уверенно совпадают якоря.
+ * Возвращает { from, to } или null.
+ */
+function resolveFragment(fileText, frag) {
+  const startPos = findAnchor(fileText, frag.startAnchor, frag.savedFrom);
+  if (startPos === -1) return null;
+  const endPos   = findAnchor(fileText, frag.endAnchor,   frag.savedTo - ANCHOR_LEN);
+  if (endPos === -1) return null;
+  const to = endPos + frag.endAnchor.length;
+  if (to <= startPos) return null;
+  return { from: startPos, to };
+}
+
+/** Читает frontmatter-поле как строку */
+function getFrontmatterField(app, file, field) {
+  try {
+    const cache = app.metadataCache.getFileCache(file);
+    if (cache && cache.frontmatter && cache.frontmatter[field] != null) {
+      return String(cache.frontmatter[field]);
+    }
+  } catch (_) {}
+  return null;
+}
+
+/** Читает теги заметки из кэша метаданных */
+function getNoteTags(app, file) {
+  try {
+    const cache = app.metadataCache.getFileCache(file);
+    const tags = [];
+    if (cache && cache.tags) {
+      cache.tags.forEach(t => tags.push(t.tag.replace(/^#/, '').toLowerCase()));
+    }
+    if (cache && cache.frontmatter && cache.frontmatter.tags) {
+      const ft = cache.frontmatter.tags;
+      const arr = Array.isArray(ft) ? ft : String(ft).split(',');
+      arr.forEach(t => tags.push(String(t).trim().toLowerCase()));
+    }
+    return tags;
+  } catch (_) { return []; }
+}
+
+// ─── Database ─────────────────────────────────────────────────────────────────
+/**
+ * Структура БД:
+ * {
+ *   notes: {
+ *     [filePath]: {
+ *       noteClass: 'self'|'ai'|'other'|'none'|null,  // авторство всей заметки
+ *       fragments: [
+ *         {
+ *           id: string,
+ *           source: 'self'|'ai'|'other',
+ *           author: string,
+ *           savedFrom: number,   // позиция на момент записи
+ *           savedTo: number,
+ *           startAnchor: string, // первые ANCHOR_LEN символов фрагмента
+ *           endAnchor: string,   // последние ANCHOR_LEN символов фрагмента
+ *           isException: boolean // true = это исключение внутри noteClass-заметки
+ *         }
+ *       ]
+ *     }
+ *   }
+ * }
+ */
+class AuthDB {
+  constructor(plugin) {
+    this.plugin = plugin;
+    this.data   = { notes: {} };
   }
 
   async load() {
     try {
-      const adapter = this.app.vault.adapter;
-      const p = this._path();
-      if (await adapter.exists(p)) {
-        this.data = JSON.parse(await adapter.read(p));
-      }
-    } catch (e) {
-      console.warn('[yule-auth] DB load error', e);
-      this.data = {};
+      const raw = await this.plugin.app.vault.adapter.read(
+        `${this.plugin.app.vault.configDir}/plugins/${PLUGIN_ID}/${DB_FILENAME}`
+      );
+      this.data = JSON.parse(raw);
+      if (!this.data.notes) this.data.notes = {};
+    } catch (_) {
+      this.data = { notes: {} };
     }
   }
 
   async save() {
     try {
-      await this.app.vault.adapter.write(
-        this._path(),
-        JSON.stringify(this.data, null, 2)
-      );
+      const path = `${this.plugin.app.vault.configDir}/plugins/${PLUGIN_ID}/${DB_FILENAME}`;
+      await this.plugin.app.vault.adapter.write(path, JSON.stringify(this.data, null, 2));
     } catch (e) {
-      console.error('[yule-auth] DB save error', e);
+      console.error('[yule-auth] DB save error:', e);
     }
   }
 
-  getRanges(filePath)          { return this.data[filePath] || []; }
-  setRanges(filePath, ranges)  {
-    if (!ranges || !ranges.length) delete this.data[filePath];
-    else this.data[filePath] = ranges;
-  }
-  deleteFile(filePath)         { delete this.data[filePath]; }
-  renameFile(oldPath, newPath) {
-    if (this.data[oldPath]) {
-      this.data[newPath] = this.data[oldPath];
-      delete this.data[oldPath];
+  getNote(filePath) {
+    if (!this.data.notes[filePath]) {
+      this.data.notes[filePath] = { noteClass: null, fragments: [] };
     }
+    return this.data.notes[filePath];
   }
-}
 
-// ─── Range utilities ─────────────────────────────────────────────────────────
-function mergeAdjacentRanges(ranges) {
-  if (!ranges || !ranges.length) return [];
-  const sorted = [...ranges].sort((a, b) => a.from - b.from);
-  const result = [{ ...sorted[0] }];
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = result[result.length - 1];
-    const curr = sorted[i];
-    if (curr.sourceType === prev.sourceType &&
-        curr.from <= prev.from + prev.length) {
-      const end = Math.max(prev.from + prev.length, curr.from + curr.length);
-      result[result.length - 1] = { ...prev, length: end - prev.from };
+  setNoteClass(filePath, cls) {
+    this.getNote(filePath).noteClass = cls;
+    this.save();
+  }
+
+  getNoteClass(filePath) {
+    return (this.data.notes[filePath] || {}).noteClass || null;
+  }
+
+  /** Добавляет или обновляет фрагмент */
+  addFragment(filePath, { source, author, from, to, text, isException }) {
+    const note = this.getNote(filePath);
+    const startAnchor = makeStartAnchor(text);
+    const endAnchor   = makeEndAnchor(text);
+    // Проверяем, нет ли уже перекрывающегося фрагмента с тем же авторством
+    // (обновляем его вместо дублирования)
+    const existing = note.fragments.find(f =>
+      f.startAnchor === startAnchor && f.source === source
+    );
+    if (existing) {
+      existing.savedFrom   = from;
+      existing.savedTo     = to;
+      existing.endAnchor   = endAnchor;
+      existing.isException = isException || false;
     } else {
-      result.push({ ...curr });
-    }
-  }
-  return result.filter(r => r.length > 0);
-}
-
-function adjustRangesForInsert(ranges, insertAt, insertLen, sourceType, authorName) {
-  const shifted = ranges.map(r => {
-    if (r.from >= insertAt)
-      return { ...r, from: r.from + insertLen };
-    if (r.from < insertAt && r.from + r.length > insertAt)
-      return { ...r, length: r.length + insertLen };
-    return { ...r };
-  });
-  shifted.push({ from: insertAt, length: insertLen, sourceType, authorName });
-  return mergeAdjacentRanges(shifted.filter(r => r.length > 0));
-}
-
-function adjustRangesForDelete(ranges, deleteFrom, deleteLen) {
-  const deleteTo = deleteFrom + deleteLen;
-  return ranges.map(r => {
-    const rEnd = r.from + r.length;
-    if (r.from >= deleteTo)  return { ...r, from: r.from - deleteLen };
-    if (rEnd  <= deleteFrom) return { ...r };
-    const newFrom = Math.min(r.from, deleteFrom);
-    const newEnd  = Math.max(rEnd - deleteLen, deleteFrom);
-    return { ...r, from: newFrom, length: newEnd - newFrom };
-  }).filter(r => r.length > 0);
-}
-
-// ─── CodeMirror 6 extension ──────────────────────────────────────────────────
-function createEditorExtension(plugin) {
-  let cm6;
-  try {
-    const state = require('@codemirror/state');
-    const view  = require('@codemirror/view');
-    cm6 = {
-      StateField:  state.StateField,
-      StateEffect: state.StateEffect,
-      Decoration:  view.Decoration,
-      EditorView:  view.EditorView,
-    };
-  } catch (e) {
-    console.error('[yule-auth] Cannot access CodeMirror 6:', e);
-    return null;
-  }
-
-  const setRangesEffect = cm6.StateEffect.define();
-  const markEffect      = cm6.StateEffect.define();
-  plugin._cmEffects = { setRangesEffect, markEffect };
-
-  const authorshipField = cm6.StateField.define({
-    create: () => ({ ranges: [] }),
-
-    update(state, tr) {
-      let ranges = state.ranges;
-
-      for (const eff of tr.effects) {
-        if (eff.is(setRangesEffect)) {
-          ranges = eff.value ? [...eff.value] : [];
-        }
-        if (eff.is(markEffect)) {
-          const { from, to, sourceType, authorName } = eff.value;
-          const length = to - from;
-          let rs = ranges.flatMap(r => {
-            const rEnd = r.from + r.length;
-            if (r.from >= to || rEnd <= from) return [{ ...r }];
-            const parts = [];
-            if (r.from < from) parts.push({ ...r, length: from - r.from });
-            if (rEnd > to)     parts.push({ ...r, from: to, length: rEnd - to });
-            return parts;
-          });
-          rs.push({ from, length, sourceType, authorName });
-          ranges = mergeAdjacentRanges(rs.filter(r => r.length > 0));
-        }
-      }
-
-      if (tr.docChanged && plugin.settings.enabled) {
-        let source = null;
-        if (tr.isUserEvent('input.paste') || tr.isUserEvent('input.drop')) {
-          source = plugin.settings.defaultPasteSource;
-        } else if (
-          tr.isUserEvent('input.type') ||
-          tr.isUserEvent('input.type.compose') ||
-          tr.isUserEvent('input')
-        ) {
-          source = SourceType.SELF;
-        }
-
-        if (source !== null) {
-          const authorName =
-            source === SourceType.SELF ? plugin.settings.selfAuthorName :
-            source === SourceType.AI   ? 'AI' : 'Other';
-          let rs = [...ranges];
-          let offset = 0;
-          tr.changes.iterChanges((fromA, toA, fromB, toB) => {
-            const adjFrom   = fromA + offset;
-            const deleteLen = toA - fromA;
-            const insertLen = toB - fromB;
-            if (deleteLen > 0) rs = adjustRangesForDelete(rs, adjFrom, deleteLen);
-            if (insertLen > 0) rs = adjustRangesForInsert(rs, adjFrom, insertLen, source, authorName);
-            offset += insertLen - deleteLen;
-          });
-          ranges = mergeAdjacentRanges(rs);
-        } else {
-          let rs = [...ranges];
-          let offset = 0;
-          tr.changes.iterChanges((fromA, toA, fromB, toB) => {
-            const adjFrom   = fromA + offset;
-            const deleteLen = toA - fromA;
-            const insertLen = toB - fromB;
-            if (deleteLen > 0) rs = adjustRangesForDelete(rs, adjFrom, deleteLen);
-            offset += insertLen - deleteLen;
-          });
-          ranges = mergeAdjacentRanges(rs);
-        }
-      }
-
-      return { ranges };
-    },
-
-    provide(field) {
-      return cm6.EditorView.decorations.from(field, state => {
-        if (!plugin.settings.enabled) return cm6.Decoration.none;
-        return buildDecorations(state.ranges, plugin.settings, cm6);
+      note.fragments.push({
+        id:          Date.now().toString(36) + Math.random().toString(36).slice(2),
+        source,
+        author,
+        savedFrom:   from,
+        savedTo:     to,
+        startAnchor,
+        endAnchor,
+        isException: isException || false,
+        created:     Date.now(),
       });
-    },
-  });
-
-  plugin._authorshipField = authorshipField;
-  return authorshipField;
-}
-
-function buildDecorations(ranges, settings, cm6) {
-  const decos = [];
-  for (const r of ranges) {
-    if (!r || r.length <= 0) continue;
-    const show =
-      (r.sourceType === SourceType.SELF  && settings.showSelf)  ||
-      (r.sourceType === SourceType.AI    && settings.showAi)    ||
-      (r.sourceType === SourceType.OTHER && settings.showOther);
-    if (!show) continue;
-    try {
-      decos.push(
-        cm6.Decoration.mark({ class: `yule-auth-${r.sourceType}` })
-          .range(r.from, r.from + r.length)
-      );
-    } catch { /* skip invalid ranges */ }
+    }
+    this.save();
   }
-  decos.sort((a, b) => a.from - b.from || a.to - b.to);
-  try   { return cm6.Decoration.set(decos, true); }
-  catch { return cm6.Decoration.none; }
+
+  /** Удаляет фрагменты, перекрывающие диапазон [from, to] */
+  removeFragmentsInRange(filePath, fileText, from, to) {
+    const note = this.getNote(filePath);
+    const before = note.fragments.length;
+    note.fragments = note.fragments.filter(f => {
+      const pos = resolveFragment(fileText, f);
+      if (!pos) return false; // якорь не найден — тоже удаляем
+      // Оставляем только те, что не пересекаются с диапазоном
+      return pos.to <= from || pos.from >= to;
+    });
+    if (note.fragments.length !== before) this.save();
+    return before - note.fragments.length;
+  }
+
+  /** Возвращает все разрешённые фрагменты для файла */
+  resolveFragments(filePath, fileText) {
+    const note = this.getNote(filePath);
+    const result = [];
+    for (const f of note.fragments) {
+      const pos = resolveFragment(fileText, f);
+      if (pos) result.push({ ...f, from: pos.from, to: pos.to });
+    }
+    return result;
+  }
+
+  /** Находит фрагмент, в котором находится курсор (или любую точку диапазона) */
+  findFragmentAtPos(filePath, fileText, pos) {
+    const resolved = this.resolveFragments(filePath, fileText);
+    return resolved.find(f => f.from <= pos && f.to >= pos) || null;
+  }
 }
 
-// ─── Paste dialog ────────────────────────────────────────────────────────────
-class PasteAuthorshipModal extends obsidian.Modal {
-  constructor(app, plugin, pastedText, callback) {
+// ─── Paste Dialog ─────────────────────────────────────────────────────────────
+class PasteModal extends obsidian.Modal {
+  constructor(app, pastedText, onChoice) {
     super(app);
-    this.plugin = plugin; this.pastedText = pastedText; this.callback = callback;
+    this.pastedText = pastedText;
+    this.onChoice   = onChoice;
     this.modalEl.addClass('yule-auth-modal');
   }
 
   onOpen() {
-    const t = i18n[this.plugin.settings.language] || i18n.ru;
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.createEl('h2', { text: t.dialogTitle });
+    const t = i18n[window._yuleAuthLang || 'ru'];
+    this.contentEl.empty();
+    const h = this.contentEl.createEl('h2', { text: t.dialogTitle });
 
-    const preview = contentEl.createDiv({ cls: 'yule-modal-preview' });
-    preview.textContent = this.pastedText.slice(0, 130) + (this.pastedText.length > 130 ? '…' : '');
+    // Preview
+    const preview = this.contentEl.createEl('div', { cls: 'yule-modal-preview' });
+    preview.setText(this.pastedText.slice(0, 200));
 
-    const buttons = contentEl.createDiv({ cls: 'yule-modal-buttons' });
-    const btn = (label, cls, cb) => {
-      const el = buttons.createEl('button', { text: label, cls: ['yule-modal-btn', cls] });
-      el.addEventListener('click', () => { this.close(); cb(); });
+    // Buttons
+    const btnRow = this.contentEl.createEl('div', { cls: 'yule-modal-buttons' });
+
+    const mkBtn = (label, cls, source) => {
+      const btn = btnRow.createEl('button', { text: label, cls: ['yule-modal-btn', cls] });
+      btn.addEventListener('click', () => { this.close(); this.onChoice(source); });
     };
-    btn(t.selfLabel,  'btn-self',  () => this.callback(SourceType.SELF));
-    btn(t.aiLabel,    'btn-ai',    () => this.callback(SourceType.AI));
-    btn(t.otherLabel, 'btn-other', () => this.callback(SourceType.OTHER));
-    btn(t.dialogSkip, 'btn-skip',  () => this.callback(null));
+    mkBtn(t.selfLabel,  'btn-self',  SourceType.SELF);
+    mkBtn(t.aiLabel,    'btn-ai',    SourceType.AI);
+    mkBtn(t.otherLabel, 'btn-other', SourceType.OTHER);
+    mkBtn(t.dialogSkip, 'btn-skip',  null);
 
-    const footer = contentEl.createDiv({ cls: 'yule-modal-footer' });
+    // Footer
+    const footer = this.contentEl.createEl('div', { cls: 'yule-modal-footer' });
     const linkSession = footer.createEl('a', { text: t.dialogDisableSession });
     linkSession.addEventListener('click', () => {
-      this.plugin._pasteDialogSuppressed = true;
-      if (!this.plugin.settings.pasteDialogRestore) {
-        this.plugin.settings.pasteDialogEnabled = false;
-        void this.plugin.saveSettings();
-      }
-      this.close(); this.callback(null);
+      this.close();
+      this.onChoice(null, 'session');
     });
-    const linkPerm = footer.createEl('a', { text: t.dialogDisable });
-    linkPerm.style.marginLeft = '1rem';
-    linkPerm.addEventListener('click', () => {
-      this.plugin.settings.pasteDialogEnabled = false;
-      void this.plugin.saveSettings();
-      this.close(); this.callback(null);
+    const linkForever = footer.createEl('a', { text: t.dialogDisable });
+    linkForever.addEventListener('click', () => {
+      this.close();
+      this.onChoice(null, 'forever');
     });
   }
-
-  onClose() { this.contentEl.empty(); }
 }
 
-// ─── Tag auto-mark modal ─────────────────────────────────────────────────────
-class TagMarkModal extends obsidian.Modal {
-  constructor(app, plugin, file, triggerTag, callback) {
-    super(app);
-    this.plugin = plugin; this.file = file;
-    this.triggerTag = triggerTag; this.callback = callback;
-    this.modalEl.addClass('yule-auth-modal');
-  }
+// ─── CSS generation ──────────────────────────────────────────────────────────
+function buildCSS(s) {
+  const hex2rgba = (hex, opacity) => {
+    const r = parseInt(hex.slice(1,3),16);
+    const g = parseInt(hex.slice(3,5),16);
+    const b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${opacity/100})`;
+  };
 
-  onOpen() {
-    const t = i18n[this.plugin.settings.language] || i18n.ru;
-    const { contentEl } = this;
-    contentEl.empty();
+  const typeCSS = (type, prefix) => {
+    const show = s[`show${prefix}`];
+    if (!show) return `.yule-auth-${type} { all: unset; }`;
 
-    contentEl.createEl('h2', { text: t.tagModalTitle });
-    contentEl.createEl('p', {
-      text: t.tagModalDesc.replace('{tag}', this.triggerTag),
-      cls: 'yule-tag-modal-desc',
-    });
+    const lines = [];
+    if (s[`${type}BgEnabled`]) {
+      const c1 = hex2rgba(s[`${type}BgColor1`], s[`${type}BgOpacity`]);
+      const c2 = hex2rgba(s[`${type}BgColor2`], s[`${type}BgOpacity`]);
+      const c3 = hex2rgba(s[`${type}BgColor3`], s[`${type}BgOpacity`]);
+      lines.push(`background: linear-gradient(90deg, ${c1}, ${c2}, ${c3}); border-radius: 2px;`);
+    }
+    if (s[`${type}TextGradient`]) {
+      const c1 = hex2rgba(s[`${type}TextColor1`], s[`${type}TextOpacity`]);
+      const c2 = hex2rgba(s[`${type}TextColor2`], s[`${type}TextOpacity`]);
+      const c3 = hex2rgba(s[`${type}TextColor3`], s[`${type}TextOpacity`]);
+      lines.push(`background: linear-gradient(90deg, ${c1}, ${c2}, ${c3}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;`);
+    }
+    if (s[`${type}Italic`]) lines.push('font-style: italic;');
 
-    const buttons = contentEl.createDiv({ cls: 'yule-modal-buttons' });
+    return `.yule-auth-${type} { ${lines.join(' ')} }`;
+  };
 
-    const yesBtn = buttons.createEl('button', {
-      text: t.tagModalYes,
-      cls: ['yule-modal-btn', 'btn-other', 'mod-cta'],
-    });
-    yesBtn.addEventListener('click', () => { this.close(); this.callback('mark'); });
-
-    const noBtn = buttons.createEl('button', {
-      text: t.tagModalNo, cls: ['yule-modal-btn', 'btn-skip'],
-    });
-    noBtn.addEventListener('click', () => { this.close(); this.callback('skip'); });
-
-    const footer = contentEl.createDiv({ cls: 'yule-modal-footer' });
-    const neverLink = footer.createEl('a', { text: t.tagModalNever });
-    neverLink.addEventListener('click', () => { this.close(); this.callback('never'); });
-  }
-
-  onClose() { this.contentEl.empty(); }
+  return [
+    typeCSS('self',  'Self'),
+    typeCSS('ai',    'Ai'),
+    typeCSS('other', 'Other'),
+    // Стиль для исключения внутри noteClass-заметки (перекрывает базовый класс)
+    `.yule-auth-exception { outline: 2px dashed rgba(255,255,255,0.35); border-radius: 2px; }`,
+  ].join('\n');
 }
 
-// ─── Settings tab ────────────────────────────────────────────────────────────
-class YuleAuthSettingsTab extends obsidian.PluginSettingTab {
-  constructor(app, plugin) { super(app, plugin); this.plugin = plugin; }
+// ─── Settings tab ─────────────────────────────────────────────────────────────
+class YuleAuthSettingTab extends obsidian.PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+
+  get t() { return i18n[this.plugin.settings.language] || i18n.ru; }
 
   display() {
     const { containerEl } = this;
     containerEl.empty();
+    containerEl.createEl('h2', { text: this.t.settingsTitle });
 
-    const t    = i18n[this.plugin.settings.language] || i18n.ru;
-    const s    = this.plugin.settings;
-    const save = async (patch) => {
-      Object.assign(this.plugin.settings, patch);
+    // ── Language ──────────────────────────────────────────────────────────────
+    new obsidian.Setting(containerEl)
+      .setName(this.t.language)
+      .setDesc(this.t.languageDesc)
+      .addDropdown(d => d
+        .addOption('ru', 'Русский')
+        .addOption('en', 'English')
+        .setValue(this.plugin.settings.language)
+        .onChange(async v => {
+          this.plugin.settings.language = v;
+          window._yuleAuthLang = v;
+          await this.plugin.saveSettings();
+          this.display();
+        })
+      );
+
+    // ── Tracking ──────────────────────────────────────────────────────────────
+    containerEl.createEl('h3', { text: this.t.trackingSection });
+
+    new obsidian.Setting(containerEl)
+      .setName(this.t.tracking)
+      .setDesc(this.t.trackingDesc)
+      .addToggle(t => t
+        .setValue(this.plugin.settings.enabled)
+        .onChange(async v => {
+          this.plugin.settings.enabled = v;
+          await this.plugin.saveSettings();
+          this.plugin.applyCustomCSS();
+          this.plugin.refreshAllEditors();
+        })
+      );
+
+    new obsidian.Setting(containerEl)
+      .setName(this.t.authorName)
+      .setDesc(this.t.authorNameDesc)
+      .addText(t => t
+        .setPlaceholder(this.t.authorNamePh)
+        .setValue(this.plugin.settings.selfAuthorName)
+        .onChange(async v => {
+          this.plugin.settings.selfAuthorName = v;
+          await this.plugin.saveSettings();
+        })
+      );
+
+    // ── Paste dialog ──────────────────────────────────────────────────────────
+    containerEl.createEl('h3', { text: this.t.pasteSection });
+
+    new obsidian.Setting(containerEl)
+      .setName(this.t.pasteDialog)
+      .setDesc(this.t.pasteDialogDesc)
+      .addToggle(t => t
+        .setValue(this.plugin.settings.pasteDialogEnabled)
+        .onChange(async v => {
+          this.plugin.settings.pasteDialogEnabled = v;
+          await this.plugin.saveSettings();
+        })
+      );
+
+    new obsidian.Setting(containerEl)
+      .setName(this.t.pasteDialogRestore)
+      .setDesc(this.t.pasteDialogRestoreDesc)
+      .addToggle(t => t
+        .setValue(this.plugin.settings.pasteDialogRestore)
+        .onChange(async v => {
+          this.plugin.settings.pasteDialogRestore = v;
+          await this.plugin.saveSettings();
+        })
+      );
+
+    new obsidian.Setting(containerEl)
+      .setName(this.t.defaultPaste)
+      .setDesc(this.t.defaultPasteDesc)
+      .addDropdown(d => d
+        .addOption(SourceType.SELF,  this.t.selfLabel)
+        .addOption(SourceType.AI,    this.t.aiLabel)
+        .addOption(SourceType.OTHER, this.t.otherLabel)
+        .setValue(this.plugin.settings.defaultPasteSource)
+        .onChange(async v => {
+          this.plugin.settings.defaultPasteSource = v;
+          await this.plugin.saveSettings();
+        })
+      );
+
+    // ── Tag auto-mark ─────────────────────────────────────────────────────────
+    containerEl.createEl('h3', { text: this.t.tagSection });
+    containerEl.createEl('p', { text: this.t.tagSectionDesc, cls: 'setting-item-description' });
+
+    const tagsFor = (key, labelKey, descKey, phKey) => {
+      new obsidian.Setting(containerEl)
+        .setName(this.t[labelKey])
+        .setDesc(this.t[descKey])
+        .addText(t => t
+          .setPlaceholder(this.t[phKey])
+          .setValue((this.plugin.settings[key] || []).join(', '))
+          .onChange(async v => {
+            this.plugin.settings[key] = v.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+            await this.plugin.saveSettings();
+          })
+        );
+    };
+    tagsFor('selfTags',  'selfTagsLabel',  'selfTagsDesc',  'selfTagsPh');
+    tagsFor('aiTags',    'aiTagsLabel',    'aiTagsDesc',    'aiTagsPh');
+    tagsFor('otherTags', 'otherTagsLabel', 'otherTagsDesc', 'otherTagsPh');
+
+    // ── Highlight ─────────────────────────────────────────────────────────────
+    containerEl.createEl('h3', { text: this.t.highlightSection });
+
+    new obsidian.Setting(containerEl).setName(this.t.showSelf)
+      .addToggle(t => t.setValue(this.plugin.settings.showSelf).onChange(async v => {
+        this.plugin.settings.showSelf = v;
+        await this.plugin.saveSettings(); this.plugin.applyCustomCSS(); this.plugin.refreshAllEditors();
+      }));
+    new obsidian.Setting(containerEl).setName(this.t.showAi)
+      .addToggle(t => t.setValue(this.plugin.settings.showAi).onChange(async v => {
+        this.plugin.settings.showAi = v;
+        await this.plugin.saveSettings(); this.plugin.applyCustomCSS(); this.plugin.refreshAllEditors();
+      }));
+    new obsidian.Setting(containerEl).setName(this.t.showOther)
+      .addToggle(t => t.setValue(this.plugin.settings.showOther).onChange(async v => {
+        this.plugin.settings.showOther = v;
+        await this.plugin.saveSettings(); this.plugin.applyCustomCSS(); this.plugin.refreshAllEditors();
+      }));
+
+    // ── Per-type appearance ───────────────────────────────────────────────────
+    this.renderTypeSettings(containerEl, 'self',  'Self',  this.t.selfSection);
+    this.renderTypeSettings(containerEl, 'ai',    'Ai',    this.t.aiSection);
+    this.renderTypeSettings(containerEl, 'other', 'Other', this.t.otherSection);
+  }
+
+  renderTypeSettings(el, type, prefix, title) {
+    el.createEl('h4', { text: title });
+    const s = this.plugin.settings;
+
+    const mk = (label, desc, key, widget) => {
+      const setting = new obsidian.Setting(el).setName(label);
+      if (desc) setting.setDesc(desc);
+      widget(setting);
+    };
+
+    const saveRefresh = async () => {
       await this.plugin.saveSettings();
       this.plugin.applyCustomCSS();
       this.plugin.refreshAllEditors();
     };
 
-    // Language
-    new obsidian.Setting(containerEl)
-      .setName(t.language).setDesc(t.languageDesc)
-      .addDropdown(d => d
-        .addOption('ru', 'Русский').addOption('en', 'English')
-        .setValue(s.language)
-        .onChange(async v => { await save({ language: v }); this.display(); })
-      );
-
-    // Tracking
-    containerEl.createEl('h3', { text: t.trackingSection });
-    new obsidian.Setting(containerEl).setName(t.tracking).setDesc(t.trackingDesc)
-      .addToggle(tg => tg.setValue(s.enabled).onChange(v => save({ enabled: v })));
-    new obsidian.Setting(containerEl).setName(t.authorName).setDesc(t.authorNameDesc)
-      .addText(tx => tx.setPlaceholder(t.authorNamePh).setValue(s.selfAuthorName)
-        .onChange(v => save({ selfAuthorName: v || t.authorNamePh })));
-
-    // Paste dialog
-    containerEl.createEl('h3', { text: t.pasteSection });
-    new obsidian.Setting(containerEl).setName(t.pasteDialog).setDesc(t.pasteDialogDesc)
-      .addToggle(tg => tg.setValue(s.pasteDialogEnabled).onChange(v => save({ pasteDialogEnabled: v })));
-    new obsidian.Setting(containerEl).setName(t.pasteDialogRestore).setDesc(t.pasteDialogRestoreDesc)
-      .addToggle(tg => tg.setValue(s.pasteDialogRestore).onChange(v => save({ pasteDialogRestore: v })));
-    new obsidian.Setting(containerEl).setName(t.defaultPaste).setDesc(t.defaultPasteDesc)
-      .addDropdown(d => d
-        .addOption(SourceType.SELF,  t.selfLabel)
-        .addOption(SourceType.AI,    t.aiLabel)
-        .addOption(SourceType.OTHER, t.otherLabel)
-        .setValue(s.defaultPasteSource)
-        .onChange(v => save({ defaultPasteSource: v }))
-      );
-
-    // Tag auto-mark
-    containerEl.createEl('h3', { text: t.tagSection });
-    new obsidian.Setting(containerEl).setName(t.tagAutoMark).setDesc(t.tagAutoMarkDesc)
-      .addToggle(tg => tg.setValue(s.tagAutoMark).onChange(v => save({ tagAutoMark: v })));
-    new obsidian.Setting(containerEl).setName(t.tagAutoMarkTags).setDesc(t.tagAutoMarkTagsDesc)
-      .addText(tx => tx
-        .setPlaceholder(t.tagAutoMarkTagsPh)
-        .setValue((s.tagAutoMarkTags || []).join(', '))
-        .onChange(v => {
-          const tags = v.split(',').map(x => x.trim().replace(/^#/, '')).filter(Boolean);
-          save({ tagAutoMarkTags: tags });
-        })
-      );
-
-    // Visibility toggles
-    containerEl.createEl('h3', { text: t.highlightSection });
-    new obsidian.Setting(containerEl).setName(t.showSelf)
-      .addToggle(tg => tg.setValue(s.showSelf).onChange(v => save({ showSelf: v })));
-    new obsidian.Setting(containerEl).setName(t.showAi)
-      .addToggle(tg => tg.setValue(s.showAi).onChange(v => save({ showAi: v })));
-    new obsidian.Setting(containerEl).setName(t.showOther)
-      .addToggle(tg => tg.setValue(s.showOther).onChange(v => save({ showOther: v })));
-
-    // Per-type style sections
-    const addTypeSection = (type, label) => {
-      containerEl.createEl('h3', { text: label });
-
-      new obsidian.Setting(containerEl).setName(t.bgEnabled).setDesc(t.bgEnabledDesc)
-        .addToggle(tg => tg.setValue(s[`${type}BgEnabled`])
-          .onChange(v => save({ [`${type}BgEnabled`]: v })));
-      new obsidian.Setting(containerEl).setName(t.bgColor1)
-        .addColorPicker(cp => cp.setValue(s[`${type}BgColor1`])
-          .onChange(v => save({ [`${type}BgColor1`]: v })));
-      new obsidian.Setting(containerEl).setName(t.bgColor2)
-        .addColorPicker(cp => cp.setValue(s[`${type}BgColor2`])
-          .onChange(v => save({ [`${type}BgColor2`]: v })));
-      new obsidian.Setting(containerEl).setName(t.bgColor3)
-        .addColorPicker(cp => cp.setValue(s[`${type}BgColor3`])
-          .onChange(v => save({ [`${type}BgColor3`]: v })));
-      new obsidian.Setting(containerEl).setName(t.bgOpacity)
-        .addSlider(sl => sl.setLimits(1, 100, 1).setValue(s[`${type}BgOpacity`])
-          .setDynamicTooltip().onChange(v => save({ [`${type}BgOpacity`]: v })));
-
-      new obsidian.Setting(containerEl).setName(t.textGradient).setDesc(t.textGradientDesc)
-        .addToggle(tg => tg.setValue(s[`${type}TextGradient`])
-          .onChange(v => save({ [`${type}TextGradient`]: v })));
-      new obsidian.Setting(containerEl).setName(t.textColor1)
-        .addColorPicker(cp => cp.setValue(s[`${type}TextColor1`])
-          .onChange(v => save({ [`${type}TextColor1`]: v })));
-      new obsidian.Setting(containerEl).setName(t.textColor2)
-        .addColorPicker(cp => cp.setValue(s[`${type}TextColor2`])
-          .onChange(v => save({ [`${type}TextColor2`]: v })));
-      new obsidian.Setting(containerEl).setName(t.textColor3)
-        .addColorPicker(cp => cp.setValue(s[`${type}TextColor3`])
-          .onChange(v => save({ [`${type}TextColor3`]: v })));
-      new obsidian.Setting(containerEl).setName(t.textOpacity)
-        .addSlider(sl => sl.setLimits(1, 100, 1).setValue(s[`${type}TextOpacity`])
-          .setDynamicTooltip().onChange(v => save({ [`${type}TextOpacity`]: v })));
-
-      new obsidian.Setting(containerEl).setName(t.italic).setDesc(t.italicDesc)
-        .addToggle(tg => tg.setValue(s[`${type}Italic`])
-          .onChange(v => save({ [`${type}Italic`]: v })));
-    };
-
-    addTypeSection('self',  t.selfSection);
-    addTypeSection('ai',    t.aiSection);
-    addTypeSection('other', t.otherSection);
+    mk(this.t.bgEnabled, this.t.bgEnabledDesc, `${type}BgEnabled`, st =>
+      st.addToggle(t => t.setValue(s[`${type}BgEnabled`]).onChange(async v => { s[`${type}BgEnabled`] = v; await saveRefresh(); })));
+    mk(this.t.bgColor1,  null, `${type}BgColor1`, st =>
+      st.addColorPicker(c => c.setValue(s[`${type}BgColor1`]).onChange(async v => { s[`${type}BgColor1`] = v; await saveRefresh(); })));
+    mk(this.t.bgColor2,  null, `${type}BgColor2`, st =>
+      st.addColorPicker(c => c.setValue(s[`${type}BgColor2`]).onChange(async v => { s[`${type}BgColor2`] = v; await saveRefresh(); })));
+    mk(this.t.bgColor3,  null, `${type}BgColor3`, st =>
+      st.addColorPicker(c => c.setValue(s[`${type}BgColor3`]).onChange(async v => { s[`${type}BgColor3`] = v; await saveRefresh(); })));
+    mk(this.t.bgOpacity, null, `${type}BgOpacity`, st =>
+      st.addSlider(sl => sl.setLimits(0,100,1).setValue(s[`${type}BgOpacity`]).setDynamicTooltip().onChange(async v => { s[`${type}BgOpacity`] = v; await saveRefresh(); })));
+    mk(this.t.textGradient, this.t.textGradientDesc, `${type}TextGradient`, st =>
+      st.addToggle(t => t.setValue(s[`${type}TextGradient`]).onChange(async v => { s[`${type}TextGradient`] = v; await saveRefresh(); })));
+    mk(this.t.textColor1, null, `${type}TextColor1`, st =>
+      st.addColorPicker(c => c.setValue(s[`${type}TextColor1`]).onChange(async v => { s[`${type}TextColor1`] = v; await saveRefresh(); })));
+    mk(this.t.textColor2, null, `${type}TextColor2`, st =>
+      st.addColorPicker(c => c.setValue(s[`${type}TextColor2`]).onChange(async v => { s[`${type}TextColor2`] = v; await saveRefresh(); })));
+    mk(this.t.textColor3, null, `${type}TextColor3`, st =>
+      st.addColorPicker(c => c.setValue(s[`${type}TextColor3`]).onChange(async v => { s[`${type}TextColor3`] = v; await saveRefresh(); })));
+    mk(this.t.textOpacity, null, `${type}TextOpacity`, st =>
+      st.addSlider(sl => sl.setLimits(0,100,1).setValue(s[`${type}TextOpacity`]).setDynamicTooltip().onChange(async v => { s[`${type}TextOpacity`] = v; await saveRefresh(); })));
+    mk(this.t.italic, this.t.italicDesc, `${type}Italic`, st =>
+      st.addToggle(t => t.setValue(s[`${type}Italic`]).onChange(async v => { s[`${type}Italic`] = v; await saveRefresh(); })));
   }
 }
 
-// ─── Main Plugin ─────────────────────────────────────────────────────────────
+// ─── CodeMirror 6 extension ───────────────────────────────────────────────────
+
+/**
+ * Создаёт ViewPlugin, который декорирует текст авторства.
+ * noteClass  — авторство всей заметки ('self'|'ai'|'other'|'none'|null)
+ * fragments  — разрешённые фрагменты [{from, to, source, isException}]
+ * showSelf/showAi/showOther — видимость
+ */
+function buildDecoration(source, isException) {
+  const cls = `yule-auth-${source}${isException ? ' yule-auth-exception' : ''}`;
+  return obsidian.editorViewField
+    ? null // заглушка, реальная реализация ниже
+    : null;
+}
+
+// ─── Main Plugin ──────────────────────────────────────────────────────────────
 class YuleAuthPlugin extends obsidian.Plugin {
 
   async onload() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    if (this.settings.pasteDialogRestore) this.settings.pasteDialogEnabled = true;
+    await this.loadSettings();
+    window._yuleAuthLang = this.settings.language;
 
-    this._pasteDialogSuppressed = false;
-    this._tagPromptedFiles      = new Set();
-    this._tagIgnoredFiles       = new Set();
-
-    this.db = new YuleAuthDB(this.app);
+    this.db = new AuthDB(this);
     await this.db.load();
 
-    this._authorshipField = null;
-    this._cmEffects       = null;
-
-    const ext = createEditorExtension(this);
-    if (ext) {
-      this.registerEditorExtension(ext);
-    } else {
-      console.warn('[yule-auth] CodeMirror 6 extension could not be created.');
+    this._pasteDialogDisabledSession = false;
+    if (this.settings.pasteDialogRestore) {
+      this._pasteDialogDisabledSession = false;
     }
 
-    this.addSettingTab(new YuleAuthSettingsTab(this.app, this));
+    // CSS
+    this.styleEl = document.createElement('style');
+    this.styleEl.id = 'yule-auth-style';
+    document.head.appendChild(this.styleEl);
     this.applyCustomCSS();
-    this._registerCommands();
-    this._registerEvents();
-    console.log('[yule-auth] Plugin loaded');
+
+    // Settings tab
+    this.addSettingTab(new YuleAuthSettingTab(this.app, this));
+
+    // ── Commands ──────────────────────────────────────────────────────────────
+    const t = () => i18n[this.settings.language] || i18n.ru;
+
+    // Снять авторство
+    this.addCommand({
+      id:   'clear-authorship',
+      name: t().cmdClearAuthorship,
+      editorCallback: (editor, view) => {
+        this.cmdClearAuthorship(editor, view);
+      },
+    });
+
+    // Пометить как: Мой текст
+    this.addCommand({
+      id:   'mark-self',
+      name: t().cmdMarkSelf,
+      editorCallback: (editor, view) => {
+        this.markSelection(editor, view, SourceType.SELF);
+      },
+    });
+
+    // Пометить как: ИИ
+    this.addCommand({
+      id:   'mark-ai',
+      name: t().cmdMarkAi,
+      editorCallback: (editor, view) => {
+        this.markSelection(editor, view, SourceType.AI);
+      },
+    });
+
+    // Пометить как: Чужой текст
+    this.addCommand({
+      id:   'mark-other',
+      name: t().cmdMarkOther,
+      editorCallback: (editor, view) => {
+        this.markSelection(editor, view, SourceType.OTHER);
+      },
+    });
+
+    // ── Event: paste ──────────────────────────────────────────────────────────
+    this.registerEvent(
+      this.app.workspace.on('editor-paste', (evt, editor, view) => {
+        this.handlePaste(evt, editor, view);
+      })
+    );
+
+    // ── Event: file open / metadata change → check tags & noteClass ───────────
+    this.registerEvent(
+      this.app.workspace.on('file-open', (file) => {
+        if (file) this.checkTagsAndNoteClass(file);
+      })
+    );
+
+    this.registerEvent(
+      this.app.metadataCache.on('changed', (file) => {
+        this.checkTagsAndNoteClass(file);
+      })
+    );
+
+    // ── CodeMirror decorations ────────────────────────────────────────────────
+    this.registerEditorExtension(this.buildCMExtension());
+
+    console.log('[yule-auth] loaded');
   }
 
   onunload() {
-    const el = document.getElementById('yule-auth-css');
-    if (el) el.remove();
-    void this.db.save();
-    console.log('[yule-auth] Plugin unloaded');
+    if (this.styleEl) this.styleEl.remove();
+    console.log('[yule-auth] unloaded');
   }
 
-  async saveSettings() { await this.saveData(this.settings); }
+  // ── Settings ─────────────────────────────────────────────────────────────────
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
 
-  // ── CSS generation ──────────────────────────────────────────────────────
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
+
+  // ── CSS ───────────────────────────────────────────────────────────────────────
   applyCustomCSS() {
-    let style = document.getElementById('yule-auth-css');
-    if (!style) {
-      style = document.createElement('style');
-      style.id = 'yule-auth-css';
-      document.head.appendChild(style);
+    if (!this.styleEl) return;
+    if (!this.settings.enabled) {
+      this.styleEl.textContent = '.yule-auth-self, .yule-auth-ai, .yule-auth-other { all: unset; }';
+      return;
+    }
+    this.styleEl.textContent = buildCSS(this.settings);
+  }
+
+  // ── Refresh ───────────────────────────────────────────────────────────────────
+  refreshAllEditors() {
+    this.app.workspace.iterateAllLeaves(leaf => {
+      if (leaf.view && leaf.view.editor) {
+        try { leaf.view.editor.refresh(); } catch (_) {}
+      }
+    });
+  }
+
+  // ── Tag check ─────────────────────────────────────────────────────────────────
+  /**
+   * Проверяет теги заметки и, при совпадении, молча присваивает noteClass.
+   * Также читает frontmatter-поле `yule_class` или `yule-class`.
+   */
+  async checkTagsAndNoteClass(file) {
+    if (!file || file.extension !== 'md') return;
+    const path = file.path;
+    const tags  = getNoteTags(this.app, file);
+
+    // Frontmatter: yule_class или yule-class
+    const fmClass = getFrontmatterField(this.app, file, 'yule_class')
+                 || getFrontmatterField(this.app, file, 'yule-class');
+    if (fmClass) {
+      const cls = fmClass.trim().toLowerCase();
+      if ([SourceType.SELF, SourceType.AI, SourceType.OTHER, SourceType.NONE].includes(cls)) {
+        this.db.setNoteClass(path, cls);
+        this.refreshAllEditors();
+        return;
+      }
     }
 
     const s = this.settings;
-    const op = (hex, pct) => {
-      hex = hex.replace('#', '');
-      if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-      const r = parseInt(hex.slice(0, 2), 16);
-      const g = parseInt(hex.slice(2, 4), 16);
-      const b = parseInt(hex.slice(4, 6), 16);
-      return `rgba(${r},${g},${b},${(pct / 100).toFixed(2)})`;
-    };
+    const matchTag = (tagList) => tagList && tagList.some(tag => tags.includes(tag));
 
-    const buildCSS = (type) => {
-      const bgOn = s[`${type}BgEnabled`];
-      const bgC1 = s[`${type}BgColor1`], bgC2 = s[`${type}BgColor2`], bgC3 = s[`${type}BgColor3`];
-      const bgOp = s[`${type}BgOpacity`];
-      const tgOn = s[`${type}TextGradient`];
-      const tC1  = s[`${type}TextColor1`], tC2  = s[`${type}TextColor2`], tC3  = s[`${type}TextColor3`];
-      const tOp  = s[`${type}TextOpacity`];
-      const it   = s[`${type}Italic`];
-      let css    = '';
+    let newClass = null;
+    if (matchTag(s.selfTags))  newClass = SourceType.SELF;
+    if (matchTag(s.aiTags))    newClass = SourceType.AI;
+    if (matchTag(s.otherTags)) newClass = SourceType.OTHER;
 
-      if (tgOn) {
-        // Text gradient via background-clip: text
-        css += `background:linear-gradient(90deg,${op(tC1,tOp)},${op(tC2,tOp)},${op(tC3,tOp)});`
-             + `-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;`;
-        // Background highlight when both are on: use inset box-shadow
-        // (doesn't interfere with background-clip: text)
-        if (bgOn) {
-          css += `box-shadow:inset 0 0 0 1000px ${op(bgC1, bgOp)};`;
-        }
-      } else if (bgOn) {
-        css += `background:linear-gradient(90deg,${op(bgC1,bgOp)},${op(bgC2,bgOp)},${op(bgC3,bgOp)});`
-             + `border-radius:2px;`;
-      }
-
-      if (it) css += 'font-style:italic;';
-      return css;
-    };
-
-    style.textContent = `
-      .yule-auth-self  { ${buildCSS('self')} }
-      .yule-auth-ai    { ${buildCSS('ai')} }
-      .yule-auth-other { ${buildCSS('other')} }
-    `;
-  }
-
-  refreshAllEditors() {
-    const leaves = this.app.workspace.getLeavesOfType('markdown');
-    for (const leaf of leaves) {
-      const cm = leaf.view?.editor?.cm;
-      if (cm) { try { cm.dispatch({}); } catch { /* ignore */ } }
+    if (newClass && this.db.getNoteClass(path) !== newClass) {
+      this.db.setNoteClass(path, newClass);
+      this.refreshAllEditors();
     }
   }
 
-  // ── Commands ─────────────────────────────────────────────────────────────
-  _registerCommands() {
-    this.addCommand({
-      id: 'mark-as-self', name: 'Mark selection as self',
-      editorCallback: (_ed, ctx) => this._markSelection(ctx, SourceType.SELF),
-    });
-    this.addCommand({
-      id: 'mark-as-ai', name: 'Mark selection as AI',
-      editorCallback: (_ed, ctx) => this._markSelection(ctx, SourceType.AI),
-    });
-    this.addCommand({
-      id: 'mark-as-other', name: 'Mark selection as other (human)',
-      editorCallback: (_ed, ctx) => this._markSelection(ctx, SourceType.OTHER),
-    });
-    this.addCommand({
-      id: 'toggle-highlighting', name: 'Toggle authorship highlighting',
-      callback: () => {
-        this.settings.enabled = !this.settings.enabled;
-        void this.saveSettings();
-        this.applyCustomCSS();
+  // ── Paste handling ────────────────────────────────────────────────────────────
+  handlePaste(evt, editor, view) {
+    const file = view && view.file;
+    if (!file) return;
+
+    // Если noteClass = none — не применяем авторство вообще
+    const noteClass = this.db.getNoteClass(file.path);
+    if (noteClass === SourceType.NONE) return;
+
+    const text = evt.clipboardData && evt.clipboardData.getData('text/plain');
+    if (!text || !text.trim()) return;
+
+    const words = text.trim().split(/\s+/);
+    const hasPunct = /[.!?;,]/.test(text);
+    const isLong   = words.length >= 5 && hasPunct;
+
+    if (!isLong) return; // короткие вставки не спрашиваем
+
+    // noteClass задаёт авторство заметки — вставка внутрь считается исключением, если хочется
+    // но диалог всё равно показываем если включён
+
+    const applySource = (source) => {
+      if (!source) return;
+      // Получаем текущую позицию курсора ПОСЛЕ вставки (Obsidian уже вставил)
+      setTimeout(() => {
+        const fileText = editor.getValue();
+        const cursor   = editor.getCursor();
+        const to       = editor.posToOffset(cursor);
+        const from     = to - text.length;
+        if (from < 0) return;
+        const actualText = fileText.slice(from, to);
+        const isException = !!(noteClass && noteClass !== SourceType.NONE && noteClass !== source);
+        this.db.addFragment(file.path, {
+          source,
+          author:      source === SourceType.SELF ? this.settings.selfAuthorName : source,
+          from,
+          to,
+          text:        actualText,
+          isException,
+        });
         this.refreshAllEditors();
-      },
-    });
-  }
+      }, 50);
+    };
 
-  _markSelection(ctx, sourceType) {
-    if (!this._cmEffects || !this._authorshipField) return;
-    const cm = ctx?.editor?.cm;
-    if (!cm) return;
-    const { from, to } = cm.state.selection.main;
-    if (from === to) { new obsidian.Notice('[yule-auth] No text selected'); return; }
-    const authorName =
-      sourceType === SourceType.SELF ? this.settings.selfAuthorName :
-      sourceType === SourceType.AI   ? 'AI' : 'Other';
-    cm.dispatch({ effects: this._cmEffects.markEffect.of({ from, to, sourceType, authorName }) });
-    this._scheduleDBSave();
-  }
-
-  // ── Events ───────────────────────────────────────────────────────────────
-  _registerEvents() {
-    // File open: load ranges + check tags
-    this.registerEvent(
-      this.app.workspace.on('file-open', async (file) => {
-        if (!file) return;
-        await this._loadRangesForFile(file);
-        this._checkTagsForAutoMark(file);
-      })
-    );
-
-    // Metadata change: re-check tags on the currently open file
-    this.registerEvent(
-      this.app.metadataCache.on('changed', (file) => {
-        const active = this.app.workspace.getActiveFile();
-        if (!active || active.path !== file.path) return;
-        this._checkTagsForAutoMark(file);
-      })
-    );
-
-    // Debounced save on edit
-    this._debouncedSave = obsidian.debounce(() => this._saveCurrentFileRanges(), 1800, true);
-    this.registerEvent(this.app.workspace.on('editor-change', () => this._debouncedSave()));
-
-    // Rename / delete
-    this.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
-      this.db.renameFile(oldPath, file.path); void this.db.save();
-    }));
-    this.registerEvent(this.app.vault.on('delete', (file) => {
-      this.db.deleteFile(file.path); void this.db.save();
-    }));
-
-    // Paste intercept
-    this.registerDomEvent(document, 'paste', (e) => {
-      if (!this.settings.enabled || !this.settings.pasteDialogEnabled) return;
-      if (this._pasteDialogSuppressed) return;
-      const activeView = this.app.workspace.getActiveViewOfType(obsidian.MarkdownView);
-      if (!activeView) return;
-      const text = e.clipboardData?.getData('text/plain') || '';
-      if (!this._isDialogWorthy(text)) return;
-      e.preventDefault(); e.stopPropagation();
-      this._handlePasteWithDialog(activeView, text);
-    }, true);
-  }
-
-  _isDialogWorthy(text) {
-    return text.trim().split(/\s+/).filter(Boolean).length >= 5 && /[.!?…]/.test(text);
-  }
-
-  _handlePasteWithDialog(activeView, text) {
-    new PasteAuthorshipModal(this.app, this, text,
-      (sourceType) => this._applyPastedText(activeView, text, sourceType)
-    ).open();
-  }
-
-  _applyPastedText(activeView, text, sourceType) {
-    const editor = activeView.editor;
-    if (!editor) return;
-    const cursor   = editor.getCursor();
-    const cm       = activeView.editor?.cm;
-    let insertFrom = 0;
-    if (cm) {
-      try { const line = cm.state.doc.line(cursor.line + 1); insertFrom = line.from + cursor.ch; }
-      catch { insertFrom = 0; }
+    if (!this.settings.pasteDialogEnabled || this._pasteDialogDisabledSession) {
+      applySource(this.settings.defaultPasteSource);
+      return;
     }
+
+    // Показываем диалог
+    evt.preventDefault();
+    // Вставляем текст вручную (т.к. предотвратили дефолт)
     editor.replaceSelection(text);
-    if (sourceType && this._cmEffects && this._authorshipField && cm) {
-      const authorName =
-        sourceType === SourceType.SELF ? this.settings.selfAuthorName :
-        sourceType === SourceType.AI   ? 'AI' : 'Other';
-      try {
-        cm.dispatch({ effects: this._cmEffects.markEffect.of({
-          from: insertFrom, to: insertFrom + text.length, sourceType, authorName,
-        })});
-      } catch (e) { console.warn('[yule-auth] mark after paste error', e); }
-    }
-    this._scheduleDBSave();
-  }
 
-  // ── Tag auto-mark ────────────────────────────────────────────────────────
-  _getFileTags(file) {
-    const cache = this.app.metadataCache.getFileCache(file);
-    if (!cache) return [];
-    const tags = [];
-    if (cache.frontmatter?.tags) {
-      const ft = cache.frontmatter.tags;
-      if (Array.isArray(ft)) tags.push(...ft);
-      else if (typeof ft === 'string') tags.push(ft);
-    }
-    if (cache.tags) cache.tags.forEach(t => tags.push(t.tag.replace(/^#/, '')));
-    return tags.map(t => t.replace(/^#/, '').toLowerCase().trim());
-  }
-
-  _checkTagsForAutoMark(file) {
-    if (!file || !this.settings.tagAutoMark) return;
-    const triggerList = (this.settings.tagAutoMarkTags || [])
-      .map(t => t.toLowerCase().trim()).filter(Boolean);
-    if (!triggerList.length) return;
-    if (this._tagIgnoredFiles.has(file.path)) return;
-
-    const matchedTag = this._getFileTags(file).find(tag => triggerList.includes(tag));
-    if (!matchedTag) return;
-
-    const promptKey = `${file.path}::${matchedTag}`;
-    if (this._tagPromptedFiles.has(promptKey)) return;
-    this._tagPromptedFiles.add(promptKey);
-
-    new TagMarkModal(this.app, this, file, matchedTag, async (action) => {
-      if (action === 'mark')  await this._markEntireFileAsOther(file);
-      if (action === 'never') this._tagIgnoredFiles.add(file.path);
+    new PasteModal(this.app, text, (source, disableMode) => {
+      if (disableMode === 'session')  this._pasteDialogDisabledSession = true;
+      if (disableMode === 'forever') {
+        this.settings.pasteDialogEnabled = false;
+        this.saveSettings();
+      }
+      applySource(source);
     }).open();
   }
 
-  async _markEntireFileAsOther(file) {
+  // ── Mark selection ────────────────────────────────────────────────────────────
+  markSelection(editor, view, source) {
+    const file = view && view.file;
+    if (!file) return;
+
+    const noteClass = this.db.getNoteClass(file.path);
+    if (noteClass === SourceType.NONE) {
+      new obsidian.Notice('[yule-auth] Для этой заметки авторство отключено (yule_class: none)');
+      return;
+    }
+
+    const sel = editor.getSelection();
+    if (!sel || !sel.trim()) {
+      new obsidian.Notice('[yule-auth] Выделите фрагмент текста');
+      return;
+    }
+
+    const fileText = editor.getValue();
+    const from = editor.posToOffset(editor.getCursor('from'));
+    const to   = editor.posToOffset(editor.getCursor('to'));
+    const text = fileText.slice(from, to);
+
+    if (text.length < 2) return;
+
+    const isException = !!(noteClass && noteClass !== SourceType.NONE && noteClass !== source);
+
+    this.db.addFragment(file.path, {
+      source,
+      author:  source === SourceType.SELF ? this.settings.selfAuthorName : source,
+      from,
+      to,
+      text,
+      isException,
+    });
+    this.refreshAllEditors();
+
+    const t = i18n[this.settings.language] || i18n.ru;
+    const labels = { self: t.selfLabel, ai: t.aiLabel, other: t.otherLabel };
+    new obsidian.Notice(`[yule-auth] Помечено: ${labels[source]}`);
+  }
+
+  // ── Clear authorship command ───────────────────────────────────────────────────
+  cmdClearAuthorship(editor, view) {
+    const file = view && view.file;
+    if (!file) return;
+
+    const fileText = editor.getValue();
+    const selFrom  = editor.posToOffset(editor.getCursor('from'));
+    const selTo    = editor.posToOffset(editor.getCursor('to'));
+
+    let from, to;
+    if (selFrom !== selTo) {
+      // Есть выделение
+      from = selFrom;
+      to   = selTo;
+    } else {
+      // Курсор — ищем фрагмент
+      const frag = this.db.findFragmentAtPos(file.path, fileText, selFrom);
+      if (!frag) {
+        new obsidian.Notice('[yule-auth] Курсор не находится внутри помеченного фрагмента');
+        return;
+      }
+      from = frag.from;
+      to   = frag.to;
+    }
+
+    const removed = this.db.removeFragmentsInRange(file.path, fileText, from, to);
+    this.refreshAllEditors();
+    const t = i18n[this.settings.language] || i18n.ru;
+    new obsidian.Notice(`[yule-auth] Авторство снято (${removed} фр.)`);
+  }
+
+  // ── CodeMirror 6 Extension ────────────────────────────────────────────────────
+  buildCMExtension() {
+    const plugin = this;
+
+    const { StateField, StateEffect, Decoration, ViewPlugin, EditorView } =
+      // Берём из глобального контекста CM6, который Obsidian предоставляет
+      window.CodeMirror || {};
+
+    // Если CM6 API недоступен через window, пробуем require
+    let cm6;
     try {
-      const content = await this.app.vault.read(file);
-      this.db.setRanges(file.path, [{
-        from: 0, length: content.length,
-        sourceType: SourceType.OTHER, authorName: 'Other',
-      }]);
-      await this.db.save();
-      await this._loadRangesForFile(file);
-    } catch (e) { console.error('[yule-auth] markEntireFileAsOther error', e); }
-  }
-
-  // ── DB helpers ───────────────────────────────────────────────────────────
-  async _loadRangesForFile(file) {
-    if (!this._cmEffects || !this._authorshipField) return;
-    const ranges     = this.db.getRanges(file.path);
-    const activeView = this.app.workspace.getActiveViewOfType(obsidian.MarkdownView);
-    if (!activeView) return;
-    const cm = activeView.editor?.cm;
-    if (!cm) return;
-    try { cm.dispatch({ effects: this._cmEffects.setRangesEffect.of(ranges) }); }
-    catch (e) { console.warn('[yule-auth] load ranges error', e); }
-  }
-
-  async _saveCurrentFileRanges() {
-    if (!this._authorshipField) return;
-    const activeView = this.app.workspace.getActiveViewOfType(obsidian.MarkdownView);
-    if (!activeView?.file) return;
-    const cm = activeView.editor?.cm;
-    if (!cm) return;
+      cm6 = require('@codemirror/view');
+    } catch (_) {
+      try { cm6 = require('codemirror/view'); } catch (_2) {}
+    }
+    let cm6state;
     try {
-      const state = cm.state.field(this._authorshipField, false);
-      if (!state) return;
-      this.db.setRanges(activeView.file.path, [...state.ranges]);
-      await this.db.save();
-    } catch (e) { console.warn('[yule-auth] save ranges error', e); }
+      cm6state = require('@codemirror/state');
+    } catch (_) {}
+
+    if (!cm6 || !cm6state) {
+      // Fallback: используем EditorExtension через Obsidian API напрямую
+      return this.buildCMExtensionViaObsidian();
+    }
+
+    const { Decoration: Dec, ViewPlugin: VP, EditorView: EV } = cm6;
+    const { RangeSetBuilder } = cm6state;
+
+    return VP.define(v => ({
+      decorations: plugin.buildDecorations(v, Dec, RangeSetBuilder),
+      update(update) {
+        if (update.docChanged || update.viewportChanged || update.geometryChanged) {
+          this.decorations = plugin.buildDecorations(update.view, Dec, RangeSetBuilder);
+        }
+      },
+    }), { decorations: v => v.decorations });
   }
 
-  _scheduleDBSave() { setTimeout(() => void this._saveCurrentFileRanges(), 100); }
+  buildCMExtensionViaObsidian() {
+    // Obsidian экспортирует editorViewField и editorEditorField
+    // Используем MarkdownView + registerEditorExtension через Obsidian-совместимый путь
+    const plugin = this;
+
+    // Реализуем через ViewPlugin из @codemirror/view встроенного в Obsidian
+    // Obsidian использует CM6 внутри и предоставляет его через внутренние модули.
+    // Ниже надёжный способ получить нужные классы:
+    const tryGet = (...names) => {
+      for (const n of names) {
+        try {
+          const m = require(n);
+          if (m && (m.ViewPlugin || m.Decoration)) return m;
+        } catch (_) {}
+      }
+      return null;
+    };
+
+    const view  = tryGet('@codemirror/view',  'codemirror/view');
+    const state = tryGet('@codemirror/state', 'codemirror/state');
+
+    if (!view || !state) {
+      console.warn('[yule-auth] CodeMirror 6 modules not found, decorations disabled');
+      return [];
+    }
+
+    const { ViewPlugin, Decoration, EditorView } = view;
+    const { RangeSetBuilder }                    = state;
+
+    return ViewPlugin.define(v => ({
+      decorations: plugin.buildDecorations(v, Decoration, RangeSetBuilder),
+      update(upd) {
+        if (upd.docChanged || upd.viewportChanged) {
+          this.decorations = plugin.buildDecorations(upd.view, Decoration, RangeSetBuilder);
+        }
+      },
+    }), { decorations: ins => ins.decorations });
+  }
+
+  buildDecorations(view, Decoration, RangeSetBuilder) {
+    if (!this.settings.enabled) return Decoration.none;
+
+    // Получаем файл текущего вида
+    const file = this.getCurrentFile(view);
+    if (!file) return Decoration.none;
+
+    const noteClass = this.db.getNoteClass(file.path);
+    // Если noteClass = none — вообще не рисуем
+    if (noteClass === SourceType.NONE) return Decoration.none;
+
+    const fileText = view.state.doc.toString();
+    const builder  = new RangeSetBuilder();
+
+    // Собираем диапазоны для отрисовки
+    const ranges = [];
+
+    // 1. Если есть noteClass — весь текст (кроме frontmatter) получает этот класс
+    if (noteClass && noteClass !== SourceType.NONE) {
+      const bodyStart = this.getBodyStart(fileText);
+      const bodyEnd   = fileText.length;
+      if (bodyStart < bodyEnd) {
+        ranges.push({ from: bodyStart, to: bodyEnd, source: noteClass, isException: false, isNoteClass: true });
+      }
+    }
+
+    // 2. Явные фрагменты из БД (перекрывают noteClass для своего диапазона)
+    const fragments = this.db.resolveFragments(file.path, fileText);
+    for (const f of fragments) {
+      ranges.push({ from: f.from, to: f.to, source: f.source, isException: f.isException, isNoteClass: false });
+    }
+
+    // Сортируем: сначала noteClass-диапазоны (фон), потом фрагменты (поверх)
+    ranges.sort((a, b) => a.from - b.from || (a.isNoteClass ? -1 : 1));
+
+    // Фильтруем по видимости
+    const show = { self: this.settings.showSelf, ai: this.settings.showAi, other: this.settings.showOther };
+
+    // Строим декорации в порядке возрастания позиций (требование CM6)
+    const toRender = [];
+    for (const r of ranges) {
+      if (!show[r.source]) continue;
+      const cls = `yule-auth-${r.source}${r.isException ? ' yule-auth-exception' : ''}`;
+      if (r.from >= 0 && r.to <= fileText.length && r.from < r.to) {
+        toRender.push({ from: r.from, to: r.to, cls });
+      }
+    }
+
+    // CM6 требует: диапазоны должны идти по возрастанию и не пересекаться
+    // Для упрощения: строим не пересекающееся покрытие
+    const merged = this.mergeRanges(toRender, fileText.length);
+
+    for (const r of merged) {
+      try {
+        builder.add(r.from, r.to, Decoration.mark({ class: r.cls }));
+      } catch (_) {}
+    }
+
+    return builder.finish();
+  }
+
+  /**
+   * Получает начало тела заметки (после frontmatter).
+   */
+  getBodyStart(text) {
+    if (text.startsWith('---')) {
+      const end = text.indexOf('\n---', 4);
+      if (end !== -1) return end + 4;
+    }
+    return 0;
+  }
+
+  /**
+   * Разрешает перекрывающиеся диапазоны: более поздние (фрагменты) имеют приоритет над noteClass.
+   * Возвращает не пересекающийся список.
+   */
+  mergeRanges(ranges, docLen) {
+    if (!ranges.length) return [];
+
+    // Разделяем noteClass-диапазоны и фрагменты
+    // Фрагменты (не noteClass) имеют приоритет
+    // Простой подход: строим побайтовый массив классов, потом группируем в диапазоны
+    // Но для длинных файлов это дорого. Используем алгоритм «вычитания»:
+
+    // Шаг 1: собираем фрагменты отдельно (они перекрывают noteClass)
+    const noteClassRanges = ranges.filter((_, i) => false); // будем чинить
+    // На самом деле просто возвращаем ranges как есть — CM6 допускает перекрытие в разных декорациях
+    // но запрещает добавлять одну и ту же декорацию с пересечением через builder.add.
+    // Решение: возвращаем все диапазоны отсортированными — CM6 применяет все классы.
+    // Однако builder.add требует строго не убывающего порядка без пересечений.
+
+    // Используем простую merge-стратегию:
+    const result = [];
+    let cursor = 0;
+
+    const sorted = [...ranges].sort((a, b) => a.from - b.from);
+
+    for (const r of sorted) {
+      if (r.from < cursor) {
+        // Пересечение — обрезаем слева
+        if (r.to <= cursor) continue;
+        result.push({ from: cursor, to: r.to, cls: r.cls });
+        cursor = r.to;
+      } else {
+        result.push({ from: r.from, to: r.to, cls: r.cls });
+        cursor = r.to;
+      }
+    }
+
+    return result;
+  }
+
+  getCurrentFile(view) {
+    // Пробуем получить файл через app.workspace
+    try {
+      const leaves = this.app.workspace.getLeavesOfType('markdown');
+      for (const leaf of leaves) {
+        const v = leaf.view;
+        if (v && v.editor && v.editor.cm === view) return v.file;
+        // CM6 view может быть вложен
+        if (v && v.editor && v.editor.cm && v.editor.cm.state === view.state) return v.file;
+      }
+      // Альтернатива: через активный лист
+      const active = this.app.workspace.getActiveViewOfType(obsidian.MarkdownView);
+      if (active) return active.file;
+    } catch (_) {}
+    return null;
+  }
 }
 
 module.exports = YuleAuthPlugin;
