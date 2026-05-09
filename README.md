@@ -8,7 +8,7 @@ Download `main.js`, `styles.css`, and `manifest.json` from Releases and place th
 
 ## Compatibility
 
-Obsidian ≥ 1.4.0. Tested in Live Preview and Reading View.
+Obsidian ≥ 1.4.0. Tested in Live Preview only.
 
 Плагин для [Obsidian](https://obsidian.md), подсвечивающий текст по авторству: свой, чужой, сгенерированный ИИ.
 
@@ -91,4 +91,4 @@ Obsidian ≥ 1.4.0. Tested in Live Preview and Reading View.
 
 ## Совместимость
 
-Obsidian ≥ 1.4.0. Протестировано в Live Preview и Reading View.
+Obsidian ≥ 1.4.0. Протестировано только в Live Preview.
