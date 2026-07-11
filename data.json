@@ -1,0 +1,238 @@
+{
+  "enabled": true,
+  "language": "ru",
+  "selfSynonyms": [
+    "yule"
+  ],
+  "customTypes": [],
+  "customAuthors": [
+    {
+      "authValue": "компиляция",
+      "synonyms": [],
+      "stripeEnabled": true,
+      "stripeColor": "#5f5cff",
+      "stripeWidth": 3,
+      "glowEnabled": false
+    }
+  ],
+  "aiSynonyms": [
+    "ии"
+  ],
+  "otherSynonyms": [
+    "чужое",
+    "сохранёнка",
+    "кто-то",
+    "чьё-то"
+  ],
+  "noneSynonyms": [
+    "неуточнённое"
+  ],
+  "offSynonyms": [
+    "временно_откл",
+    "пауза",
+    "temporary_off"
+  ],
+  "defaultPasteSource": "other",
+  "pasteDialogEnabled": false,
+  "pasteDialogRestore": true,
+  "pasteMarkNoteDefault": false,
+  "selfTopStripeEnabled": true,
+  "tagAutoEnabled": true,
+  "tagsSelf": [],
+  "tagsAi": [],
+  "tagsOther": [
+    "цитации",
+    "выписки",
+    "вырезки",
+    "абсолютное_оружие",
+    "флоробот"
+  ],
+  "showSelf": true,
+  "showAi": true,
+  "showOther": true,
+  "selfTagOpen": "〖",
+  "selfTagClose": "〗",
+  "aiTagOpen": "❴",
+  "aiTagClose": "❵",
+  "otherTagOpen": "《",
+  "otherTagClose": "》",
+  "selfNoteBgEnabled": false,
+  "selfNoteBgColor": "#fafffd",
+  "selfNoteStripeEnabled": false,
+  "selfNoteStripeColor": "#36d341",
+  "selfNoteStripeWidth": 8,
+  "selfNoteGlowEnabled": true,
+  "aiNoteBgEnabled": true,
+  "aiNoteBgColor": "#f2f2f2",
+  "aiNoteStripeEnabled": true,
+  "aiNoteStripeColor": "#a78bfa",
+  "aiNoteStripeWidth": 8,
+  "aiNoteGlowEnabled": true,
+  "otherNoteBgEnabled": true,
+  "otherNoteBgColor": "#fffffa",
+  "otherNoteStripeEnabled": true,
+  "otherNoteStripeColor": "#fb923c",
+  "otherNoteStripeWidth": 8,
+  "otherNoteGlowEnabled": true,
+  "selfHighlightMode": "gapped",
+  "selfCornerStyle": "round",
+  "selfBgEnabled": false,
+  "selfBgColors": [
+    "#eafbea",
+    "#f0fff8"
+  ],
+  "selfBgOpacity": 100,
+  "selfTextGradient": true,
+  "selfTextColors": [
+    "#206d12",
+    "#3d5249"
+  ],
+  "selfTextOpacity": 100,
+  "selfItalic": true,
+  "selfUnderline": true,
+  "selfUnderlineColor": "#f3fcf4",
+  "selfUnderlineWidth": 8,
+  "selfRainbow": false,
+  "selfRainbowColors": [
+    "#295142",
+    "#226d39",
+    "#223f6d",
+    "#415d41",
+    "#8a8a8a",
+    "#597197",
+    "#156140"
+  ],
+  "aiHighlightMode": "gapped",
+  "aiCornerStyle": "round",
+  "aiBgEnabled": false,
+  "aiBgColors": [
+    "#faf0ff",
+    "#844aa1"
+  ],
+  "aiBgOpacity": 100,
+  "aiTextGradient": true,
+  "aiTextColors": [
+    "#413663",
+    "#645f59",
+    "#266e8c",
+    "#737373",
+    "#285831",
+    "#413885"
+  ],
+  "aiTextOpacity": 100,
+  "aiItalic": false,
+  "aiUnderline": true,
+  "aiUnderlineColor": "#fbfaff",
+  "aiUnderlineWidth": 8,
+  "aiRainbow": false,
+  "aiRainbowColors": [
+    "#4d436b",
+    "#6d3150",
+    "#184153",
+    "#1c5f46",
+    "#723170",
+    "#522014"
+  ],
+  "otherHighlightMode": "gapped",
+  "otherCornerStyle": "round",
+  "otherBgEnabled": false,
+  "otherBgColors": [
+    "#fbf6ee"
+  ],
+  "otherBgOpacity": 36,
+  "otherTextGradient": false,
+  "otherTextColors": [
+    "#213b78",
+    "#542876",
+    "#721d3b",
+    "#6b7280",
+    "#261674"
+  ],
+  "otherTextOpacity": 100,
+  "otherItalic": false,
+  "otherUnderline": true,
+  "otherUnderlineColor": "#f0f0db",
+  "otherUnderlineWidth": 8,
+  "otherRainbow": true,
+  "otherRainbowColors": [
+    "#4a311c",
+    "#563d1a",
+    "#631d1d",
+    "#6b5a43",
+    "#796620"
+  ],
+  "selfAuthorName": "Yule",
+  "selfTags": [],
+  "aiTags": [],
+  "otherTags": [
+    "цитации",
+    "выписки",
+    "вырезки"
+  ],
+  "selfBgColor1": "#e1edf4",
+  "selfBgColor2": "#d7f4e9",
+  "selfBgColor3": "#fbeaf7",
+  "selfTextColor1": "#34d399",
+  "selfTextColor2": "#10b981",
+  "selfTextColor3": "#34d399",
+  "aiBgColor1": "#a78bfa",
+  "aiBgColor2": "#e2c1e1",
+  "aiBgColor3": "#bfe3f2",
+  "aiTextColor1": "#a78bfa",
+  "aiTextColor2": "#f472b6",
+  "aiTextColor3": "#38bdf8",
+  "otherBgColor1": "#fb923c",
+  "otherBgColor2": "#fb923c",
+  "otherBgColor3": "#fb923c",
+  "otherTextColor1": "#36448c",
+  "otherTextColor2": "#3e8e7f",
+  "otherTextColor3": "#357363",
+  "tagAutoMark": true,
+  "tagAutoMarkTags": [
+    "цитации",
+    "выписки",
+    "вырезки",
+    "советы_бывалых"
+  ],
+  "settings": {
+    "enabled": true,
+    "language": "ru",
+    "selfAuthorName": "Yule",
+    "defaultPasteSource": "other",
+    "pasteDialogEnabled": true,
+    "pasteDialogRestore": true,
+    "showSelf": false,
+    "showAi": true,
+    "showOther": true,
+    "selfStyle": "underline",
+    "selfColor": "#e0c7ff",
+    "selfOpacity": 0.55,
+    "aiColor1": "#a78bfa",
+    "aiColor2": "#f472b6",
+    "aiColor3": "#38bdf8",
+    "aiOpacity": 0.18,
+    "otherOpacity": 0.65
+  },
+  "db": {
+    "Untitled_2026_05_041777899506374png.md": [
+      {
+        "from": 1791,
+        "length": 79,
+        "sourceType": "self",
+        "authorName": "Yule"
+      },
+      {
+        "from": 1870,
+        "length": 1,
+        "sourceType": "ai",
+        "authorName": "AI"
+      },
+      {
+        "from": 1871,
+        "length": 24,
+        "sourceType": "self",
+        "authorName": "Yule"
+      }
+    ]
+  }
+}

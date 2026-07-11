@@ -1,10 +1,10 @@
 {
   "id": "yule-auth",
-  "name": "yule-auth",
-  "version": "3.0.0",
-  "minAppVersion": "1.5.0",
-  "description": "Track and visualize text authorship — your own, AI-generated, or other human text. Anchor-based fragment tracking, per-note class, tag auto-mark without dialogs.",
-  "author": "yule-auth",
+  "name": "Auth — Authorship Highlighter",
+  "version": "4.0.0",
+  "minAppVersion": "1.4.0",
+  "description": "Highlights text by authorship: your own writing, AI-generated text, or other human authors. Supports note-level classes, paste dialog, tag auto-marking.",
+  "author": "Yule",
   "authorUrl": "https://github.com/Yu1e/obsidian-yule-auth",
   "isDesktopOnly": false
 }
