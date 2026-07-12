@@ -75,13 +75,13 @@ function parseFragmentTags(text, settings) {
 
 // Parse frontmatter `auth:` value → canonical class.
 // selfName = settings.selfAuthorName (any language/case).
-const CANONICAL = { self:'self', ai:'ai', other:'other', none:'none', off:'off' };
+const CANONICAL = { self:'self', ai:'ai', other:'other', none:'none', tempor_off:'tempor_off', off:'tempor_off' /* legacy */ };
 function parseAuthClass(v, settings) {
   if (!v) return null;
   const s = String(v).toLowerCase().trim();
   if (CANONICAL[s]) return CANONICAL[s];
   // User-defined synonyms
-  for (const [type, key] of [['self','selfSynonyms'],['ai','aiSynonyms'],['other','otherSynonyms'],['none','noneSynonyms'],['off','offSynonyms']]) {
+  for (const [type, key] of [['self','selfSynonyms'],['ai','aiSynonyms'],['other','otherSynonyms'],['none','noneSynonyms'],['tempor_off','offSynonyms']]) {
     const syns = (settings?.[key] || []).map(x => x.toLowerCase().trim());
     if (syns.includes(s)) return type;
   }
@@ -116,7 +116,7 @@ const LNG = {
     generalSection: 'Общее',
     tracking: 'Отслеживание авторства', trackingDesc: 'Включить/выключить подсветку авторства',
     noneLabel: 'Без класса (none)',
-    offLabel: 'Разметка отключена (off)',
+    offLabel: 'Разметка временно отключена (tempor_off)',
     pasteSection: 'Вставка',
     pasteDialog: 'Диалог при вставке', pasteDialogDesc: 'Запрашивать авторство при вставке ≥5 слов с пунктуацией',
     pasteDialogRestore: 'Восстанавливать при перезапуске', pasteDialogRestoreDesc: 'Включать диалог снова при следующем открытии Obsidian',
@@ -131,6 +131,7 @@ const LNG = {
     dialogMarkNote: 'Отметить классом всю заметку',
     dialogDisable: 'Отключить до включения вручную',
     dialogDisableSession: 'Отключить это окно до перезапуска Obsidian',
+    dialogDisableNote: 'Отключить это окно для данной заметки',
     tagSection: 'Автопометка по тегам',
     tagAutoEnabled: 'Автопометка по тегам', tagAutoEnabledDesc: 'При обнаружении тега автоматически присваивать класс заметке (без диалога)',
     tagsSelf: 'Теги → мой текст', tagsAi: 'Теги → ИИ', tagsOther: 'Теги → чужой текст',
@@ -154,6 +155,7 @@ const LNG = {
     textGradient: 'Градиент шрифта', textGradientDesc: 'Окрашивать текст градиентом (как в iA Writer)',
     textColors: 'Цвета шрифта', textOpacity: 'Интенсивность шрифта (%)',
     italic: 'Курсив', italicDesc: 'Отображать этот тип текста курсивом',
+    bold: 'Полужирный', boldDesc: 'Отображать этот тип текста полужирным',
     underline: 'Подчёркивание', underlineDesc: 'Подчёркивать этот тип текста',
     underlineColor: 'Цвет подчёркивания', underlineWidth: 'Толщина подчёркивания (px)',
     rainbow: '🌈 Разноцветные буквы', rainbowDesc: `Каждая буква своего цвета (до ${RAINBOW_MAX} символов на диапазон). Отключает градиент шрифта.`,
@@ -161,8 +163,18 @@ const LNG = {
     addColor: '+ цвет', removeColor: '×',
     collapse: 'Свернуть', expand: 'Развернуть',
     pasteMarkNoteDefault: 'Отмечать класс всей заметки по умолчанию', pasteMarkNoteDefaultDesc: 'В диалоге галочка отмечена автоматически.',
-    selfTopStripe: 'Горизонтальный акцент авторства',
-    selfTopStripeDesc: 'В заметке с чужим/ИИ авторством: если есть мои фрагменты, добавить тонкую горизонтальную подсветку вдоль верхнего края (цвет из настроек полосы «Мой текст»).',
+    selfTopStripe: 'Плашка «мои пометки»',
+    selfBadgeText: 'Есть мои пометки',
+    visRowLabel: 'Показывать раскраску авторств:',
+    dialogNoShowGroup: 'Не показывать это окно:',
+    dialogNoShowNote: 'для этой заметки',
+    dialogNoShowSession: 'до перезапуска Obsidian',
+    dialogNoShowForever: 'совсем (вернуть можно в настройках)',
+    stripePlacement: 'Полосы абзацев и заголовков',
+    stripePlacementDesc: 'Где рисовать сегменты полос для фрагментов-абзацев и блоков заголовков',
+    spEdge: 'У края заметки, в основной полосе (с градиентом)',
+    spText: 'Вплотную к тексту',
+    selfTopStripeDesc: 'В заметке с чужим/ИИ авторством показывать плашку в правом верхнем углу, если есть фрагменты моего авторства. Текст плашки — в поле рядом.',
     pseudoTagsSection: 'Выбор разметки авторства для фрагмента (псевдотеги)',
     pseudoTagsDesc: 'Символы-скобки для разметки фрагментов в тексте. Открывающий ≠ закрывающему.',
     tagOpen: 'Открывающий', tagClose: 'Закрывающий', tagChoose: 'Изменить',
@@ -176,7 +188,7 @@ const LNG = {
     generalSection: 'General',
     tracking: 'Authorship tracking', trackingDesc: 'Enable/disable authorship highlighting',
     noneLabel: 'No class (none)',
-    offLabel: 'Markup off (off)',
+    offLabel: 'Markup temporarily off (tempor_off)',
     pasteSection: 'Paste',
     pasteDialog: 'Paste dialog', pasteDialogDesc: 'Ask for authorship when pasting ≥5 words with punctuation',
     pasteDialogRestore: 'Restore on restart', pasteDialogRestoreDesc: 'Re-enable dialog on next Obsidian launch',
@@ -191,6 +203,19 @@ const LNG = {
     dialogMarkNote: 'Mark whole note with this class',
     dialogDisable: 'Disable until manually enabled',
     dialogDisableSession: 'Disable this dialog until Obsidian restarts',
+    dialogDisableNote: 'Disable this dialog for this note',
+    selfTopStripe: 'Badge “my insertions”',
+    selfTopStripeDesc: 'In notes with other/AI authorship show a top-right badge when fragments of my authorship are present.',
+    selfBadgeText: 'My insertions here',
+    visRowLabel: 'Show authorship colouring:',
+    dialogNoShowGroup: 'Do not show this dialog:',
+    dialogNoShowNote: 'for this note',
+    dialogNoShowSession: 'until Obsidian restarts',
+    dialogNoShowForever: 'permanently (re-enable in settings)',
+    stripePlacement: 'Paragraph/heading stripes',
+    stripePlacementDesc: 'Where to draw stripe segments for paragraph fragments and heading blocks',
+    spEdge: 'At the note edge, inside the main stripe (with glow)',
+    spText: 'Next to the text',
     tagSection: 'Tag auto-mark',
     tagAutoEnabled: 'Tag auto-mark', tagAutoEnabledDesc: 'Automatically assign note class when a trigger tag is detected (no dialog)',
     tagsSelf: 'Tags → my text', tagsAi: 'Tags → AI', tagsOther: 'Tags → other text',
@@ -215,6 +240,7 @@ const LNG = {
     textGradient: 'Text gradient', textGradientDesc: 'Color text with gradient (like iA Writer)',
     textColors: 'Text colors', textOpacity: 'Text intensity (%)',
     italic: 'Italic', italicDesc: 'Display this text type in italics',
+    bold: 'Bold', boldDesc: 'Display this text type in bold',
     underline: 'Underline', underlineDesc: 'Underline this text type',
     underlineColor: 'Underline color', underlineWidth: 'Underline thickness (px)',
     rainbow: '🌈 Rainbow letters', rainbowDesc: `Each letter a different color (up to ${RAINBOW_MAX} chars per range). Overrides text gradient.`,
@@ -241,12 +267,13 @@ const DEFAULTS = {
   aiSynonyms: ['ии'],
   otherSynonyms: ['сохранёнка', 'кто-то', 'чьё-то', 'чужое'],
   noneSynonyms: [],
-  offSynonyms: ['временно_откл', 'пауза', 'temporary_off'],
+  offSynonyms: ['off', 'временно_откл', 'пауза', 'temporary_off'],
   defaultPasteSource: ST.OTHER,
   pasteDialogEnabled: true,
   pasteDialogRestore: true,
   pasteMarkNoteDefault: true,
   selfTopStripeEnabled: true,
+  selfBadgeText: 'Есть мои пометки',
   tagAutoEnabled: true,
   tagsSelf:  [],
   tagsAi:    [],
@@ -267,19 +294,19 @@ const DEFAULTS = {
   selfHighlightMode:'gapped', selfCornerStyle:'round',
   selfBgEnabled:true, selfBgColors:['#e8faf3','#e0fffe'], selfBgOpacity:89,
   selfTextGradient:false, selfTextColors:['#40523d','#40523d'], selfTextOpacity:100,
-  selfItalic:false, selfUnderline:true, selfUnderlineColor:'#d3fdd8', selfUnderlineWidth:8,
+  selfItalic:false, selfBold:false, selfUnderline:true, selfUnderlineColor:'#d3fdd8', selfUnderlineWidth:8,
   selfRainbow:true, selfRainbowColors:['#295142','#226d39','#223f6d','#415d41','#8a8a8a','#597197','#156140'],
   // AI
   aiHighlightMode:'solid', aiCornerStyle:'round',
   aiBgEnabled:true, aiBgColors:['#faf0ff','#f1f0ff'], aiBgOpacity:31,
   aiTextGradient:true, aiTextColors:['#413663','#684c2c','#266e8c','#919191','#6f3916','#907f41'], aiTextOpacity:100,
-  aiItalic:false, aiUnderline:false, aiUnderlineColor:'#a78bfa', aiUnderlineWidth:2,
+  aiItalic:false, aiBold:false, aiUnderline:false, aiUnderlineColor:'#a78bfa', aiUnderlineWidth:2,
   aiRainbow:false, aiRainbowColors:['#4d436b','#6d3150','#184153','#1c5f46','#723170','#522014'],
   // Other
   otherHighlightMode:'gapped', otherCornerStyle:'round',
   otherBgEnabled:false, otherBgColors:['#fff8f0','#fff3f0'], otherBgOpacity:8,
   otherTextGradient:false, otherTextColors:['#213b78','#542876','#721d3b','#6b7280','#261674'], otherTextOpacity:100,
-  otherItalic:true, otherUnderline:true, otherUnderlineColor:'#e8e8bf', otherUnderlineWidth:6,
+  otherItalic:true, otherBold:false, otherUnderline:true, otherUnderlineColor:'#e8e8bf', otherUnderlineWidth:6,
   otherRainbow:true, otherRainbowColors:['#4a311c','#1c402f','#512424','#403857','#443c5d'],
 };
 
@@ -307,8 +334,15 @@ class AuthDB {
   }
   getNoteClass(path) { return this.data[path]?.noteClass || null; }
   setNoteClass(path, noteClass) {
-    if (!noteClass) delete this.data[path];
-    else this.data[path] = { noteClass };
+    const e = this.data[path] || {};
+    if (noteClass) e.noteClass = noteClass; else delete e.noteClass;
+    if (Object.keys(e).length) this.data[path] = e; else delete this.data[path];
+  }
+  getNoDialog(path) { return !!this.data[path]?.noDialog; }
+  setNoDialog(path, v) {
+    const e = this.data[path] || {};
+    if (v) e.noDialog = true; else delete e.noDialog;
+    if (Object.keys(e).length) this.data[path] = e; else delete this.data[path];
   }
   deleteFile(p)        { delete this.data[p]; }
   renameFile(old, neo) { if (this.data[old]) { this.data[neo] = this.data[old]; delete this.data[old]; } }
@@ -333,6 +367,18 @@ function makeGradient(colors, opacity, dir = '90deg') {
   return `linear-gradient(${dir}, ${stops.join(', ')})`;
 }
 
+// Smooth edge glow: solid stripe (solidW) + eased fade (fadeW), many stops → no banding.
+function makeEdgeGlow(color, solidW, fadeW, dir = 'to right', peakOp = 85, glowOp = 45, steps = 10) {
+  const stops = [];
+  if (solidW > 0) stops.push(`${hexToRgba(color, peakOp)} 0px`, `${hexToRgba(color, peakOp)} ${solidW}px`);
+  for (let i = 0; i <= steps; i++) {
+    const k = i / steps;
+    const op = glowOp * (1 - k) * (1 - k); // quadratic ease-out
+    stops.push(`${hexToRgba(color, +op.toFixed(1))} ${(solidW + fadeW * k).toFixed(1)}px`);
+  }
+  return `linear-gradient(${dir}, ${stops.join(', ')})`;
+}
+
 function buildTypeCSS(type, s) {
   const corner  = s[`${type}CornerStyle`]   || 'round';
   const bgOn    = s[`${type}BgEnabled`];
@@ -342,6 +388,7 @@ function buildTypeCSS(type, s) {
   const tC      = s[`${type}TextColors`]    || [];
   const tOp     = s[`${type}TextOpacity`]   || 100;
   const it      = s[`${type}Italic`];
+  const bd      = s[`${type}Bold`];
   const ul      = s[`${type}Underline`];
   const ulC     = s[`${type}UnderlineColor`]|| '#888';
   const ulW     = s[`${type}UnderlineWidth`]|| 2;
@@ -350,7 +397,7 @@ function buildTypeCSS(type, s) {
   const br = corner === 'sharp' ? '0' : corner === 'round' ? '12px' : '999px';
   let css = `border-radius:${br};`;
   // Padding only when something is visually shown — prevents phantom indent
-  const hasVisual = bgOn || ul || it;
+  const hasVisual = bgOn || ul || it || bd;
   if (hasVisual && corner === 'round') css += 'padding:0 6px;';
 
   // Accumulate box-shadows so they don't overwrite each other
@@ -365,9 +412,12 @@ function buildTypeCSS(type, s) {
     if (bgOn && bgC.length) shadows.push(`inset 0 0 0 200px ${hexToRgba(bgC[0], bgOp)}`);
   } else if (bgOn && bgC.length) {
     css += `background:${makeGradient(bgC, bgOp)};`;
+    // Узкая по вертикали подсветка: полоса фона по центру строки, впритык к буквам
+    css += `background-size:100% 1.08em;background-position:0 50%;background-repeat:no-repeat;`;
   }
 
   if (it) css += 'font-style:italic;';
+  if (bd) css += 'font-weight:700;';
   if (ul) {
     css += `text-decoration:underline;text-decoration-color:${ulC};text-decoration-thickness:${ulW}px;text-underline-offset:2px;`;
   }
@@ -381,7 +431,7 @@ function buildTypeCSS(type, s) {
 function buildCustomSettings(ct, s) {
   const d = {};
   const id = ct.id;
-  const keys = ['HighlightMode','CornerStyle','BgEnabled','BgColors','BgOpacity','TextGradient','TextColors','TextOpacity','Italic','Underline','UnderlineColor','UnderlineWidth','Rainbow','RainbowColors'];
+  const keys = ['HighlightMode','CornerStyle','BgEnabled','BgColors','BgOpacity','TextGradient','TextColors','TextOpacity','Italic','Bold','Underline','UnderlineColor','UnderlineWidth','Rainbow','RainbowColors'];
   for (const k of keys) d[`${id}${k}`] = ct[k.charAt(0).toLowerCase()+k.slice(1)] ?? DEFAULTS[`other${k}`];
   return { ...s, ...d };
 }
@@ -405,11 +455,8 @@ function buildFullCSS(s) {
       const fadeW   = s[`${type}NoteGlowEnabled`]   ? 48 : 0;
       const totalW  = stripeW + fadeW;
       if (totalW > 0) {
-        const rgba  = hexToRgba(sc, 85);
-        // Gradient runs left-to-right so stripe appears on the LEFT edge
-        const grad  = stripeW > 0
-          ? `linear-gradient(to right, ${rgba} ${stripeW}px, ${hexToRgba(sc, 40)} ${Math.round(stripeW * 1.5)}px, transparent ${totalW}px)`
-          : `linear-gradient(to right, ${hexToRgba(sc, 40)} 0px, transparent ${fadeW}px)`;
+        // Smooth multi-stop glow on the LEFT edge (same total width)
+        const grad  = makeEdgeGlow(sc, stripeW, fadeW);
         lines.push(`${sel} { background-image: ${grad} !important; background-repeat: no-repeat !important; padding-left: 12px !important; }`);
       }
     }
@@ -429,10 +476,7 @@ function buildFullCSS(s) {
       const fadeW   = ca.glowEnabled   ? 48 : 0;
       const totalW  = stripeW + fadeW;
       if (totalW > 0) {
-        const rgba = hexToRgba(sc, 85);
-        const grad = stripeW > 0
-          ? `linear-gradient(to right, ${rgba} ${stripeW}px, ${hexToRgba(sc, 40)} ${Math.round(stripeW * 1.5)}px, transparent ${totalW}px)`
-          : `linear-gradient(to right, ${hexToRgba(sc, 40)} 0px, transparent ${fadeW}px)`;
+        const grad = makeEdgeGlow(sc, stripeW, fadeW);
         lines.push(`${sel} { background-image: ${grad} !important; background-repeat: no-repeat !important; padding-left: 12px !important; }`);
       }
     }
@@ -467,22 +511,33 @@ ${(s.customTypes||[]).map(ct => ct.id ? `.auth-custom-${ct.id} { ${buildTypeCSS(
 .auth-picker-custom-inp { flex: 1; padding: 4px 8px; border-radius: 5px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); color: var(--text-normal); font-size: 1.1em; text-align: center; }
 .auth-picker-custom-btn { padding: 4px 14px; border-radius: 5px; cursor: pointer; background: var(--interactive-accent); color: var(--text-on-accent); border: none; font-size: .88em; }
 /* ── Self top-edge accent (when note is non-self but has self fragments) ── */
-${s.selfTopStripeEnabled && s.selfNoteStripeEnabled ? `
-.auth-self-top-stripe {
+${(s.selfTopStripeEnabled ?? true) ? `
+.auth-self-frags-badge {
   position: sticky;
-  top: 0;
-  left: 0;
-  width: 350px;
-  max-width: 100%;
-  height: 3px;
-  z-index: 100;
+  top: 8px;
+  z-index: 101;
+  margin-left: 2px;
+  margin-right: auto;
+  margin-bottom: -26px;       /* висит поверх, контент не сдвигает */
+  width: max-content;
+  max-width: 60%;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: .78em;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: ${s.selfNoteStripeColor || '#888'};
+  background: ${hexToRgba(s.selfNoteStripeColor || '#888', 12)};
+  border: 1px solid ${hexToRgba(s.selfNoteStripeColor || '#888', 45)};
   pointer-events: none;
-  margin-bottom: -3px;
-  background: linear-gradient(to right,
-    ${hexToRgba(s.selfNoteStripeColor || '#888', 80)} 0px,
-    ${hexToRgba(s.selfNoteStripeColor || '#888', 40)} 150px,
-    transparent 350px);
-}` : '.auth-self-top-stripe { display: none; }'}
+  backdrop-filter: blur(2px);
+}` : '.auth-self-frags-badge { display: none; }'}
+.auth-self-top-stripe { display: none; }
+
+/* ── Line-level stripes: уровни «абзац+» и «блок заголовка» ── */
+.auth-no-ul { text-decoration: none !important; }
+${['self','ai','other'].map(tp => `.auth-line-stripe-${tp} { box-shadow: inset ${(s[tp+'NoteStripeWidth']||3)}px 0 0 0 ${s[tp+'NoteStripeColor']||'#888'}; padding-left: ${((s[tp+'NoteStripeWidth']||3)+7)}px !important; }`).join('\n')}
+${(s.customTypes||[]).map(ct => ct.id ? `.auth-line-stripe-${ct.id} { box-shadow: inset 3px 0 0 0 ${(ct.bgColors&&ct.bgColors[0])||ct.underlineColor||'#888'}; padding-left: 10px !important; }` : '').join('\n')}
 
 /* ── Note background / left stripe by class ── */
 ${noteBgRules}
@@ -557,6 +612,13 @@ ${customAuthorRules}
 .auth-section-h3.auth-section-h3-collapsible .auth-collapse-arrow {
   font-size: .75em; font-weight: 400; opacity: .55; margin-left: 6px;
 }
+.auth-section-h3.auth-section-h3-collapsible .auth-collapse-title {
+  font-size: inherit !important; font-weight: inherit !important;
+  color: inherit !important; letter-spacing: inherit;
+}
+.auth-modal-noshow { margin-top: .4rem; padding-top: .55rem; border-top: 1px solid var(--background-modifier-border); }
+.auth-noshow-title { font-size: .78em; color: var(--text-muted); margin-bottom: .3rem; }
+.auth-modal-noshow .auth-modal-mark-note { margin-bottom: .35rem; }
 
 /* ── Settings: note-level subsection label ── */
 .auth-note-settings-head {
@@ -678,6 +740,7 @@ function createEditorExtension(plugin) {
       Decoration:  V.Decoration,
       EditorView:  V.EditorView,
       WidgetType:  V.WidgetType,
+      ViewPlugin:  V.ViewPlugin,
     };
   } catch (e) { console.error('[auth] CM6 unavailable', e); return null; }
 
@@ -690,8 +753,8 @@ function createEditorExtension(plugin) {
     create(state) {
       const fragments = parseFragmentTags(state.doc.toString(), plugin.settings);
       const noteClass = null;
-      const decos = buildDecorations({ noteClass, fragments, docLen: state.doc.length }, plugin.settings, cm6);
-      return { noteClass, fragments, decos, _key: '' };
+      const built = buildDecorations({ noteClass, fragments, doc: state.doc, docLen: state.doc.length }, plugin.settings, cm6);
+      return { noteClass, fragments, decos: built.decos, stripes: built.stripes, _key: '' };
     },
 
     update(val, tr) {
@@ -709,51 +772,60 @@ function createEditorExtension(plugin) {
       const key = noteClass + '|' + hasSelfFrags + '|' + fragments.map(f => f.from + ':' + f.to + ':' + f.sourceType).join(',')
                 + '|' + (plugin._settingsVersion || 0) + '|' + plugin.settings.enabled;
       let decos = val.decos;
+      let stripes = val.stripes;
       if (key !== val._key) {
-        decos = plugin.settings.enabled
-          ? buildDecorations({ noteClass, fragments, docLen: tr.newDoc.length }, plugin.settings, cm6)
-          : cm6.Decoration.none;
-        // Update auth-has-self-frags class on the view-content element
+        if (plugin.settings.enabled) {
+          const built = buildDecorations({ noteClass, fragments, doc: tr.newDoc, docLen: tr.newDoc.length }, plugin.settings, cm6);
+          decos = built.decos; stripes = built.stripes;
+        } else {
+          decos = cm6.Decoration.none; stripes = new Map();
+        }
+        // Плашка «мои пометки»: в заметке моё авторство + любое другое.
+        // Прячется только при auth: none, выключенном «Отслеживании» или выключенном плагине.
         setTimeout(() => {
+          const selfPresent  = noteClass === 'self' || fragments.some(f => f && f.sourceType === ST.SELF);
+          const otherPresent = (noteClass && noteClass !== 'self' && noteClass !== 'none' && noteClass !== 'tempor_off')
+                            || fragments.some(f => f && f.sourceType !== ST.SELF);
+          const showBadge = plugin.settings.enabled && noteClass !== 'none' && selfPresent && otherPresent;
           document.querySelectorAll('.view-content').forEach(el => {
-            const isNonSelf = [...el.classList].some(c => c.startsWith('auth-note-') && c !== 'auth-note-self');
-            el.classList.toggle('auth-has-self-frags', isNonSelf && hasSelfFrags);
-            // Inject or remove the top stripe div
-            let stripeEl = el.querySelector('.auth-self-top-stripe');
-            if (isNonSelf && hasSelfFrags) {
-              if (!stripeEl) {
-                stripeEl = document.createElement('div');
-                stripeEl.className = 'auth-self-top-stripe';
-                el.insertBefore(stripeEl, el.firstChild);
+            el.classList.toggle('auth-has-self-frags', showBadge);
+            el.querySelector('.auth-self-top-stripe')?.remove();
+            let badgeEl = el.querySelector('.auth-self-frags-badge');
+            if (showBadge) {
+              if (!badgeEl) {
+                badgeEl = document.createElement('div');
+                badgeEl.className = 'auth-self-frags-badge';
+                el.insertBefore(badgeEl, el.firstChild);
               }
-            } else if (stripeEl) {
-              stripeEl.remove();
+              badgeEl.textContent = plugin.settings.selfBadgeText
+                || ((plugin.settings.language === 'en') ? 'My insertions here' : 'Есть мои пометки');
+            } else if (badgeEl) {
+              badgeEl.remove();
             }
           });
         }, 0);
       }
-      return { noteClass, fragments, decos, _key: key };
+      return { noteClass, fragments, decos, stripes, _key: key };
     },
 
     provide: f => cm6.EditorView.decorations.from(f, v => v.decos),
   });
 
   plugin._field = field;
+
   return field;
 }
 
 function visibleFor(type, s) {
-  if (type === ST.SELF)  return s.showSelf;
-  if (type === ST.AI)    return s.showAi;
-  if (type === ST.OTHER) return s.showOther;
+  // Пофрагментные тумблеры видимости убраны: всё включает/выключает «Отслеживание авторства»
+  if (type === ST.SELF || type === ST.AI || type === ST.OTHER) return true;
   // Custom type
   const ct = (s.customTypes || []).find(x => x.id === type);
   return ct ? true : false;
 }
 
 function buildDecorations(val, settings, cm6) {
-  const { noteClass, fragments, docLen } = val;
-  if (noteClass === 'off') return cm6.Decoration.none;
+  const { noteClass, fragments, docLen, doc } = val;
 
   const decos = [];
 
@@ -770,24 +842,85 @@ function buildDecorations(val, settings, cm6) {
     try { decos.push(cm6.Decoration.mark({ class: 'auth-tag-char' }).range(from, to)); } catch {}
   };
 
-  // Fragments — skip those whose type matches noteClass (they're "self-evident")
+  // Скобки прячутся в live preview ВСЕГДА (видны только в source mode).
+  // tempor_off / совпадение с классом заметки / выключенная видимость — отключают только раскраску.
+  const lineStripes  = new Map();   // line.from → sourceType (поздние фрагменты перекрывают — полоса сегментируется)
+  const stripedFrags = new Set();   // фрагменты «только полоса» — без rainbow
+  const markStripeLines = (fromPos, toPos, type) => {
+    if (!doc) return;
+    let l = doc.lineAt(Math.min(fromPos, doc.length));
+    const endLine = doc.lineAt(Math.min(Math.max(toPos - 1, fromPos), doc.length));
+    for (;;) {
+      lineStripes.set(l.from, type);
+      if (l.number >= endLine.number) break;
+      l = doc.line(l.number + 1);
+    }
+  };
+
   for (const f of fragments) {
     if (!f || f.contentFrom >= f.contentTo) continue;
+    addTagMark(f.from, f.contentFrom);
+    addTagMark(f.contentTo, f.to);
+    if (noteClass === 'tempor_off') continue;
     if (f.sourceType === noteClass) continue;
     if (!visibleFor(f.sourceType, settings)) continue;
     const cls = ['self','ai','other'].includes(f.sourceType)
       ? `auth-${f.sourceType}`
       : `auth-custom-${f.sourceType}`;
-    // Mark tag chars (hidden via CSS in live-preview, visible in source mode)
-    addTagMark(f.from, f.contentFrom);
-    addTagMark(f.contentTo, f.to);
-    // Mark content
+
+    // ── Три длины оформления ──
+    let tier = 'inline';
+    let headLevel = 0;
+    let ls = null;
+    if (doc) {
+      ls = doc.lineAt(Math.min(f.from, doc.length));
+      const le = doc.lineAt(Math.min(f.to, doc.length));
+      const before = doc.sliceString(ls.from, f.from);
+      const after  = doc.sliceString(f.to, le.to);
+      const wholeLines = before.trim() === '' && after.trim() === '';
+      // Заголовок: либо 〖## Заголовок〗 (решётки внутри), либо ## 〖Заголовок〗 (решётки снаружи)
+      const inHead  = /^(#{1,6})\s/.exec(doc.sliceString(f.contentFrom, Math.min(f.contentFrom + 8, f.contentTo)));
+      const outHead = /^(#{1,6})\s*$/.exec(before);
+      if (after.trim() === '' && wholeLines && inHead) headLevel = inHead[1].length;
+      else if (after.trim() === '' && le.number === ls.number && outHead) headLevel = outHead[1].length;
+
+      if (headLevel > 0) tier = 'headingBlock';
+      else if (wholeLines) tier = 'paragraph';
+      else if (le.number > ls.number) tier = 'multiline';
+    }
+
+    if (tier === 'headingBlock') {
+      // Полоса вдоль всего блока заголовка (до следующего заголовка того же/старшего уровня)
+      let end = ls;
+      for (let n = ls.number + 1; n <= doc.lines; n++) {
+        const L = doc.line(n);
+        const m = /^(#{1,6})\s/.exec(L.text);
+        if (m && m[1].length <= headLevel) break;
+        end = L;
+      }
+      markStripeLines(ls.from, end.to, f.sourceType);
+      stripedFrags.add(f);
+      continue; // оформление текста под заголовком не применяется
+    }
+    if (tier === 'paragraph') {
+      // ≥ абзаца: только сегмент полосы, оформление текста снято
+      markStripeLines(f.from, f.to, f.sourceType);
+      stripedFrags.add(f);
+      continue;
+    }
+    if (tier === 'multiline') {
+      // > 1 строки исходника: оформление без подчёркивания
+      addMark(f.contentFrom, f.contentTo, cls + ' auth-no-ul');
+      continue;
+    }
     addMark(f.contentFrom, f.contentTo, cls);
   }
 
   // Rainbow per-character colours
   for (const f of fragments) {
+    if (noteClass === 'tempor_off') break;
     if (!f || f.contentFrom >= f.contentTo) continue;
+    if (stripedFrags.has(f)) continue;
     if (f.sourceType === noteClass) continue;
     if (!visibleFor(f.sourceType, settings)) continue;
     const rainbowOn = settings[`${f.sourceType}Rainbow`];
@@ -806,9 +939,15 @@ function buildDecorations(val, settings, cm6) {
     }
   }
 
+  for (const [lineFrom, type] of lineStripes) {
+    try { decos.push(cm6.Decoration.line({ class: `auth-line-stripe auth-line-stripe-${type}` }).range(lineFrom)); } catch {}
+  }
+
   decos.sort((a, b) => a.from - b.from || (a.startSide || 0) - (b.startSide || 0));
-  try { return cm6.Decoration.set(decos, true); }
-  catch { return cm6.Decoration.none; }
+  let set;
+  try { set = cm6.Decoration.set(decos, true); }
+  catch { set = cm6.Decoration.none; }
+  return { decos: set, stripes: lineStripes };
 }
 // ═══════════════════════════════════════════════════════════════
 //  Paste authorship modal
@@ -846,28 +985,40 @@ class PasteModal extends obsidian.Modal {
     btn(t.otherLabel, 'btn-other', ST.OTHER);
     btn(t.dialogSkip, 'btn-skip',  null);
 
-    // «Mark whole note» checkbox — checked by default
+    const file = this.app.workspace.getActiveFile();
+    // «Отметить классом всю заметку» — по умолчанию только в пустой заметке с пустым auth
+    const rawDoc = this.app.workspace.getActiveViewOfType(obsidian.MarkdownView)?.editor?.getValue() ?? '';
+    const bodyTxt = rawDoc.replace(/^---\n[\s\S]*?\n---\n?/, '').trim();
+    const fmAuthRaw = file ? this.app.metadataCache.getFileCache(file)?.frontmatter?.auth : null;
+    const authEmpty = fmAuthRaw == null || String(fmAuthRaw).trim() === '';
     const markNoteRow = contentEl.createDiv({ cls: 'auth-modal-mark-note' });
     const markNoteChk = markNoteRow.createEl('input');
     markNoteChk.type    = 'checkbox';
-    markNoteChk.checked = !!this.plugin.settings.pasteMarkNoteDefault;
+    markNoteChk.checked = bodyTxt.length === 0 && authEmpty && (this.plugin.settings.pasteMarkNoteDefault ?? true);
     markNoteChk.id      = 'auth-mark-note-chk';
     const markNoteLbl = markNoteRow.createEl('label', { text: t.dialogMarkNote });
     markNoteLbl.htmlFor = 'auth-mark-note-chk';
 
-    // Footer links
-    const footer = contentEl.createDiv({ cls: 'auth-modal-footer' });
-    const lkSess = footer.createEl('a', { text: t.dialogDisableSession });
-    lkSess.onclick = () => {
-      this.plugin._pasteSuppressed = true;
-      this.close(); this.cb(null, false);
+    // «Не показывать это окно» — единый блок из трёх одинаковых галок
+    const noShow = contentEl.createDiv({ cls: 'auth-modal-noshow' });
+    noShow.createDiv({ text: t.dialogNoShowGroup, cls: 'auth-noshow-title' });
+    const mkChk = (id, label, checked, onChange) => {
+      const row = noShow.createDiv({ cls: 'auth-modal-mark-note' });
+      const chk = row.createEl('input');
+      chk.type = 'checkbox'; chk.id = id; chk.checked = checked;
+      chk.addEventListener('change', () => onChange(chk.checked));
+      const lbl = row.createEl('label', { text: label });
+      lbl.htmlFor = id;
     };
-    const lkPerm = footer.createEl('a', { text: t.dialogDisable });
-    lkPerm.onclick = () => {
-      this.plugin.settings.pasteDialogEnabled = false;
-      void this.plugin.saveSettings();
-      this.close(); this.cb(null, false);
-    };
+    mkChk('auth-nodlg-note', t.dialogNoShowNote,
+      file ? this.plugin.db.getNoDialog(file.path) : false,
+      v => { if (file) { this.plugin.db.setNoDialog(file.path, v); void this.plugin.db.save(); } });
+    mkChk('auth-nodlg-sess', t.dialogNoShowSession,
+      !!this.plugin._pasteSuppressed,
+      v => { this.plugin._pasteSuppressed = v; });
+    mkChk('auth-nodlg-perm', t.dialogNoShowForever,
+      !(this.plugin.settings.pasteDialogEnabled ?? true),
+      v => { this.plugin.settings.pasteDialogEnabled = !v; void this.plugin.saveSettings(); });
   }
 
   onClose() { this.contentEl.empty(); }
@@ -980,6 +1131,11 @@ class AuthSettings extends obsidian.PluginSettingTab {
     new obsidian.Setting(containerEl).setName(t.pasteMarkNoteDefault).setDesc(t.pasteMarkNoteDefaultDesc)
       .addToggle(tg => tg.setValue(s.pasteMarkNoteDefault ?? true).onChange(v => save({ pasteMarkNoteDefault: v })));
 
+    // ── Плашка → размещение полос ──
+    new obsidian.Setting(containerEl).setName(t.selfTopStripe).setDesc(t.selfTopStripeDesc)
+      .addText(tx => tx.setPlaceholder('Есть мои пометки').setValue(s.selfBadgeText || '').onChange(v => save({ selfBadgeText: v })))
+      .addToggle(tg => tg.setValue(s.selfTopStripeEnabled ?? true).onChange(v => save({ selfTopStripeEnabled: v })));
+
     // Shared accordion: one section open at a time
     const accordion = { body: null, arrow: null };
 
@@ -1020,29 +1176,17 @@ class AuthSettings extends obsidian.PluginSettingTab {
       }
     }, true, accordion, true);
 
-    // ── Markup visibility ─────────────────────────────────
-    containerEl.createEl('h3', { text: t.highlightSection, cls: 'auth-section-h3' });
-    new obsidian.Setting(containerEl).setName(t.selfTopStripe).setDesc(t.selfTopStripeDesc)
-      .addToggle(tg => tg.setValue(s.selfTopStripeEnabled ?? true).onChange(v => save({ selfTopStripeEnabled: v })));
-    const visRow = containerEl.createDiv({ cls: 'auth-vis-row' });
-    for (const [key, label] of [['showSelf', t.selfLabel], ['showOther', t.otherLabel], ['showAi', t.aiLabel]]) {
-      const cell = visRow.createDiv({ cls: 'auth-vis-cell' });
-      cell.createSpan({ text: label });
-      const tog = new obsidian.ToggleComponent(cell);
-      tog.setValue(s[key]).onChange(v => save({ [key]: v }));
-    }
-
     // ── Per-type highlight sections ───────────────────────
     containerEl.createEl('h3', { text: t.markupSection, cls: 'auth-section-h3 auth-section-orange' });
     for (const [type, label] of [['self', t.selfSection], ['other', t.otherSection], ['ai', t.aiSection]]) {
       this._typeSection(containerEl, type, label, t, s, save, null, accordion);
     }
 
-    // ── Custom authors (note-level only) ──────────────────
-    const caHead = containerEl.createEl('h3', { cls: 'auth-section-h3' });
-    caHead.createSpan({ text: t.customAuthorsSection });
-    caHead.createEl('span', { text: ' — ' + t.customAuthorsHint, cls: 'auth-section-hint' });
-    this._renderCustomAuthors(containerEl, t, s, save);
+    // ── Custom authors — тот же уровень, что self/other/ai, свёрнуты ──
+    this._collapsibleSection(containerEl, t.customAuthorsSection, body => {
+      body.createEl('p', { text: t.customAuthorsHint, cls: 'auth-tag-modal-desc' });
+      this._renderCustomAuthors(body, t, s, save);
+    }, true, accordion, false);
   }
 
   _renderCustomAuthors(containerEl, t, s, save) {
@@ -1158,7 +1302,7 @@ class AuthSettings extends obsidian.PluginSettingTab {
     const saveType = ct ? (patch) => {
       const idx = (this.plugin.settings.customTypes||[]).findIndex(x => x.id === type);
       if (idx < 0) return save(patch);
-      const keyMap = { HighlightMode:'highlightMode', CornerStyle:'cornerStyle', BgEnabled:'bgEnabled', BgColors:'bgColors', BgOpacity:'bgOpacity', TextGradient:'textGradient', TextColors:'textColors', TextOpacity:'textOpacity', Italic:'italic', Underline:'underline', UnderlineColor:'underlineColor', UnderlineWidth:'underlineWidth', Rainbow:'rainbow', RainbowColors:'rainbowColors' };
+      const keyMap = { HighlightMode:'highlightMode', CornerStyle:'cornerStyle', BgEnabled:'bgEnabled', BgColors:'bgColors', BgOpacity:'bgOpacity', TextGradient:'textGradient', TextColors:'textColors', TextOpacity:'textOpacity', Italic:'italic', Bold:'bold', Underline:'underline', UnderlineColor:'underlineColor', UnderlineWidth:'underlineWidth', Rainbow:'rainbow', RainbowColors:'rainbowColors' };
       const ctPatch = {};
       for (const [k, v] of Object.entries(patch)) {
         const stripped = k.replace(type, '');
@@ -1218,6 +1362,8 @@ class AuthSettings extends obsidian.PluginSettingTab {
 
     gs(fontCol2, t.italic, t.italicDesc, s2 => s2.addToggle(tg =>
       tg.setValue(s[`${type}Italic`]).onChange(v => saveType({ [`${type}Italic`]: v }))));
+    gs(fontCol2, t.bold, t.boldDesc, s2 => s2.addToggle(tg =>
+      tg.setValue(!!s[`${type}Bold`]).onChange(v => saveType({ [`${type}Bold`]: v }))));
     gs(fontCol2, t.underline, t.underlineDesc, s2 => s2.addToggle(tg =>
       tg.setValue(s[`${type}Underline`]).onChange(v => saveType({ [`${type}Underline`]: v }))));
     gs(fontCol2, t.underlineColor, null, s2 => s2.addColorPicker(cp =>
@@ -1342,7 +1488,18 @@ class AuthPlugin extends obsidian.Plugin {
     console.log('[auth] unloaded');
   }
 
-  async saveSettings() { await this.saveData(this.settings); this._settingsVersion = (this._settingsVersion || 0) + 1; }
+  async saveSettings() {
+    await this.saveData(this.settings);
+    this._settingsVersion = (this._settingsVersion || 0) + 1;
+    // Пинок активному редактору: пересобрать декорации/сегменты без ожидания правки
+    const cm = this.app.workspace.getActiveViewOfType(obsidian.MarkdownView)?.editor?.cm;
+    if (cm && this._fx && this._field) {
+      try {
+        const cur = cm.state.field(this._field, false)?.noteClass ?? null;
+        cm.dispatch({ effects: this._fx.setClass.of(cur) });
+      } catch {}
+    }
+  }
 
   // ── Migrations ─────────────────────────────────────────────
   _migrateSettings() {
@@ -1404,7 +1561,7 @@ class AuthPlugin extends obsidian.Plugin {
     for (const cls of [...el.classList]) {
       if (cls.startsWith('auth-note-')) el.classList.remove(cls);
     }
-    if (noteClass && noteClass !== 'none' && noteClass !== 'off') {
+    if (noteClass && noteClass !== 'none' && noteClass !== 'tempor_off') {
       el.classList.add(`auth-note-${noteClass}`);
     }
   }
@@ -1433,8 +1590,19 @@ class AuthPlugin extends obsidian.Plugin {
     });
     this.addCommand({
       id:   'auth-off',
-      name: 'auth: Suspend all markup for this note (off)',
-      editorCallback: (_, ctx) => this._setNoteClass('off'),
+      name: 'auth: Suspend all markup for this note (tempor_off)',
+      editorCallback: (_, ctx) => this._setNoteClass('tempor_off'),
+    });
+    this.addCommand({
+      id:   'auth-toggle-note-dialog',
+      name: 'auth: Toggle paste dialog for this note (окно вставки вкл/выкл)',
+      editorCallback: () => {
+        const f = this.app.workspace.getActiveFile();
+        if (!f) return;
+        const v = !this.db.getNoDialog(f.path);
+        this.db.setNoDialog(f.path, v); void this.db.save();
+        new obsidian.Notice(v ? '[auth] Окно вставки отключено для заметки' : '[auth] Окно вставки включено для заметки');
+      },
     });
     // Note class commands removed from palette (set via paste dialog or tags)
   }
@@ -1444,6 +1612,7 @@ class AuthPlugin extends obsidian.Plugin {
     const cm = ctx?.editor?.cm;
     if (!cm) return;
     let { from, to } = cm.state.selection.main;
+    const noSel = from === to;
     if (from === to) {
       // No selection — use current line (абзац = строка)
       const line = cm.state.doc.lineAt(from);
@@ -1461,11 +1630,11 @@ class AuthPlugin extends obsidian.Plugin {
       const btnYes = btns.createEl('button', { text: 'Да — ко всей заметке', cls: 'auth-modal-btn btn-self' });
       btnYes.onclick = () => { modal.close(); this._setNoteClass(sourceType); };
       const btnNo = btns.createEl('button', { text: 'Нет — разметить фрагмент', cls: 'auth-modal-btn btn-skip' });
-      btnNo.onclick = () => { modal.close(); this._doMark(cm, from, to, sourceType); };
+      btnNo.onclick = () => { modal.close(); this._doMark(cm, from, to, sourceType, noSel); };
       modal.open();
       return;
     }
-    this._doMark(cm, from, to, sourceType);
+    this._doMark(cm, from, to, sourceType, noSel);
   }
 
   _getTag(type) {
@@ -1477,22 +1646,51 @@ class AuthPlugin extends obsidian.Plugin {
     return ca?.tagOpen ? [ca.tagOpen, ca.tagClose] : [s.otherTagOpen, s.otherTagClose];
   }
 
-  _doMark(cm, from, to, sourceType) {
+  _doMark(cm, from, to, sourceType, clearOverlaps = false) {
     const [open, close] = this._getTag(sourceType);
-    // Insert close tag first (higher pos) so inserting open doesn't shift it
-    cm.dispatch({ changes: [{ from: to, insert: close }, { from, insert: open }] });
+    const changes = [{ from: to, insert: close }, { from, insert: open }];
+    if (clearOverlaps) {
+      // Заменить авторство всей строки: удалить скобки всех фрагментов,
+      // пересекающих [from, to] — без вложения авторств.
+      const frags = parseFragmentTags(cm.state.doc.toString(), this.settings);
+      for (const f of frags) {
+        if (f.from < to && f.to > from) {
+          changes.push({ from: f.contentTo, to: f.to });
+          changes.push({ from: f.from, to: f.contentFrom });
+        }
+      }
+    }
+    cm.dispatch({ changes });
   }
 
   _removeAuth(ctx) {
     const cm = ctx?.editor?.cm;
     if (!cm) return;
-    const pos = cm.state.selection.main.from;
-    const text = cm.state.doc.toString();
-    const frags = parseFragmentTags(text, this.settings);
-    const hit = frags.find(f => f.from <= pos && pos <= f.to);
-    if (!hit) { new obsidian.Notice('[auth] Нет авторства у курсора'); return; }
-    // Delete close tag then open tag (from high to low pos to preserve offsets)
-    cm.dispatch({ changes: [{ from: hit.contentTo, to: hit.to }, { from: hit.from, to: hit.contentFrom }] });
+    const { from, to } = cm.state.selection.main;
+    const doc = cm.state.doc;
+    const frags = parseFragmentTags(doc.toString(), this.settings);
+    // Выделение: снять ВСЕ авторства, пересекающие его (любое чередование).
+    let targets;
+    if (from !== to) {
+      targets = frags.filter(f => f.from < to && f.to > from);
+    } else {
+      const hits = frags.filter(f => f.from <= from && from <= f.to);
+      if (hits.length) {
+        // Курсор внутри фрагмента: снимается только этот один (самый внутренний)
+        targets = [hits.reduce((a, b) => (b.from >= a.from ? b : a))];
+      } else {
+        // Курсор в чистом тексте: обнулить авторство всего абзаца (строки до Enter)
+        const line = doc.lineAt(from);
+        targets = frags.filter(f => f.from < line.to && f.to > line.from);
+      }
+    }
+    if (!targets.length) { new obsidian.Notice('[auth] Нет авторства у курсора / в выделении'); return; }
+    const changes = [];
+    for (const f of targets) {
+      changes.push({ from: f.contentTo, to: f.to });
+      changes.push({ from: f.from, to: f.contentFrom });
+    }
+    cm.dispatch({ changes });
   }
 
   _setNoteClass(noteClass, file) {
@@ -1572,6 +1770,9 @@ class AuthPlugin extends obsidian.Plugin {
       if (!inEditor) return;
       const view = this.app.workspace.getActiveViewOfType(obsidian.MarkdownView);
       if (!view) return;
+      const pf = view.file;
+      if (pf && this.db.getNoDialog(pf.path)) return; // окно отключено для этой заметки
+      if (pf && parseAuthClass(this.app.metadataCache.getFileCache(pf)?.frontmatter?.auth, this.settings) === 'none') return;
       const text = e.clipboardData?.getData('text/plain') || '';
       if (!this._dialogWorthy(text)) return;
       e.preventDefault();
@@ -1597,6 +1798,9 @@ class AuthPlugin extends obsidian.Plugin {
       if (!inEditor) return;
       const view = this.app.workspace.getActiveViewOfType(obsidian.MarkdownView);
       if (!view) return;
+      const pf = view.file;
+      if (pf && this.db.getNoDialog(pf.path)) return;
+      if (pf && parseAuthClass(this.app.metadataCache.getFileCache(pf)?.frontmatter?.auth, this.settings) === 'none') return;
       const text = e.dataTransfer?.getData('text/plain') || '';
       if (!text.trim() || text.trim().split(/\s+/).length < 2) return;
       // Prevent CM6 from inserting — we do it ourselves in the callback
@@ -1615,8 +1819,9 @@ class AuthPlugin extends obsidian.Plugin {
     this.register(() => window.removeEventListener('drop', dropHandler, true));
 
     // Reading view: hide pseudo-tags and apply highlight spans
-    this.registerMarkdownPostProcessor((el) => {
+    this.registerMarkdownPostProcessor((el, ctx) => {
       if (!this.settings.enabled) return;
+      const fmA = parseAuthClass(ctx?.frontmatter?.auth, this.settings);
       const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
       const textNodes = [];
       let n;
@@ -1625,14 +1830,22 @@ class AuthPlugin extends obsidian.Plugin {
         const raw = tn.textContent || '';
         const frags = parseFragmentTags(raw, this.settings);
         if (!frags.length) continue;
+        // Трёхуровневость в чтении: фрагмент на весь блок → полоса вместо оформления
+        const par = tn.parentElement;
+        const f0 = frags[0];
+        const wholeNode = frags.length === 1 &&
+          raw.slice(0, f0.from).trim() === '' && raw.slice(f0.to).trim() === '';
+        const stripeTier = wholeNode &&
+          fmA !== 'tempor_off' && f0.sourceType !== fmA && visibleFor(f0.sourceType, this.settings);
+        if (stripeTier && par) par.classList.add('auth-line-stripe', 'auth-line-stripe-' + f0.sourceType);
         const frag = document.createDocumentFragment();
         let pos = 0;
         for (const f of frags) {
           if (f.from > pos) frag.appendChild(document.createTextNode(raw.slice(pos, f.from)));
-          const cls = ['self','ai','other'].includes(f.sourceType)
-            ? `auth-${f.sourceType}` : `auth-custom-${f.sourceType}`;
+          const noColor = stripeTier || fmA === 'tempor_off' || f.sourceType === fmA || !visibleFor(f.sourceType, this.settings);
           const span = document.createElement('span');
-          span.className = cls;
+          if (!noColor) span.className = ['self','ai','other'].includes(f.sourceType)
+            ? `auth-${f.sourceType}` : `auth-custom-${f.sourceType}`;
           span.textContent = raw.slice(f.contentFrom, f.contentTo);
           frag.appendChild(span);
           pos = f.to;
