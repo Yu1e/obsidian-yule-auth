@@ -1,7 +1,7 @@
 {
   "id": "yule-auth",
   "name": "Auth — Authorship Highlighter",
-  "version": "4.0.0",
+  "version": "4.5.0",
   "minAppVersion": "1.4.0",
   "description": "Highlights text by authorship: your own writing, AI-generated text, or other human authors. Supports note-level classes, paste dialog, tag auto-marking.",
   "author": "Yule",
