@@ -780,30 +780,7 @@ function createEditorExtension(plugin) {
         } else {
           decos = cm6.Decoration.none; stripes = new Map();
         }
-        // Плашка «мои пометки»: в заметке моё авторство + любое другое.
-        // Прячется только при auth: none, выключенном «Отслеживании» или выключенном плагине.
-        setTimeout(() => {
-          const selfPresent  = noteClass === 'self' || fragments.some(f => f && f.sourceType === ST.SELF);
-          const otherPresent = (noteClass && noteClass !== 'self' && noteClass !== 'none' && noteClass !== 'tempor_off')
-                            || fragments.some(f => f && f.sourceType !== ST.SELF);
-          const showBadge = plugin.settings.enabled && noteClass !== 'none' && selfPresent && otherPresent;
-          document.querySelectorAll('.view-content').forEach(el => {
-            el.classList.toggle('auth-has-self-frags', showBadge);
-            el.querySelector('.auth-self-top-stripe')?.remove();
-            let badgeEl = el.querySelector('.auth-self-frags-badge');
-            if (showBadge) {
-              if (!badgeEl) {
-                badgeEl = document.createElement('div');
-                badgeEl.className = 'auth-self-frags-badge';
-                el.insertBefore(badgeEl, el.firstChild);
-              }
-              badgeEl.textContent = plugin.settings.selfBadgeText
-                || ((plugin.settings.language === 'en') ? 'My insertions here' : 'Есть мои пометки');
-            } else if (badgeEl) {
-              badgeEl.remove();
-            }
-          });
-        }, 0);
+        setTimeout(() => plugin._refreshBadges(), 0);
       }
       return { noteClass, fragments, decos, stripes, _key: key };
     },
@@ -812,6 +789,53 @@ function createEditorExtension(plugin) {
   });
 
   plugin._field = field;
+
+  // Плашка «мои пометки»: моё авторство + любое другое в одной заметке.
+  // Только в окнах заметок (markdown), не в боковых панелях.
+  // Прячется при auth: none, выключенном «Отслеживании авторства» и выключенном плагине.
+  plugin._refreshBadges = () => {
+    const wanted = new Map();
+    if (plugin.settings.enabled) {
+      for (const leaf of plugin.app.workspace.getLeavesOfType('markdown')) {
+        const view = leaf.view;
+        const el = view?.contentEl;
+        if (!el) continue;
+        let noteClass = null, fragments = [];
+        const fv = view.editor?.cm?.state?.field?.(field, false);
+        if (fv) {
+          noteClass = fv.noteClass; fragments = fv.fragments || [];
+        } else {
+          const raw = view.file ? plugin.app.metadataCache.getFileCache(view.file)?.frontmatter?.auth : null;
+          noteClass = parseAuthClass(raw, plugin.settings);
+          fragments = parseFragmentTags(typeof view.data === 'string' ? view.data : '', plugin.settings);
+        }
+        const selfPresent  = noteClass === 'self' || fragments.some(f => f && f.sourceType === ST.SELF);
+        const otherPresent = (noteClass && noteClass !== 'self' && noteClass !== 'none' && noteClass !== 'tempor_off')
+                          || fragments.some(f => f && f.sourceType !== ST.SELF);
+        if (noteClass !== 'none' && selfPresent && otherPresent) {
+          wanted.set(el, plugin.settings.selfBadgeText
+            || ((plugin.settings.language === 'en') ? 'My insertions here' : 'Есть мои пометки'));
+        }
+      }
+    }
+    document.querySelectorAll('.auth-self-top-stripe').forEach(b => b.remove());
+    document.querySelectorAll('.auth-self-frags-badge').forEach(b => {
+      if (!wanted.has(b.parentElement)) b.remove();
+    });
+    document.querySelectorAll('.auth-has-self-frags').forEach(e => {
+      if (!wanted.has(e)) e.classList.remove('auth-has-self-frags');
+    });
+    for (const [el, text] of wanted) {
+      el.classList.add('auth-has-self-frags');
+      let b = el.querySelector(':scope > .auth-self-frags-badge');
+      if (!b) {
+        b = document.createElement('div');
+        b.className = 'auth-self-frags-badge';
+        el.insertBefore(b, el.firstChild);
+      }
+      if (b.textContent !== text) b.textContent = text;
+    }
+  };
 
   return field;
 }
@@ -1485,6 +1509,8 @@ class AuthPlugin extends obsidian.Plugin {
 
   onunload() {
     document.getElementById('auth-css')?.remove();
+    document.querySelectorAll('.auth-self-frags-badge, .auth-self-top-stripe').forEach(e => e.remove());
+    document.querySelectorAll('.auth-has-self-frags').forEach(e => e.classList.remove('auth-has-self-frags'));
     console.log('[auth] unloaded');
   }
 
@@ -1712,6 +1738,11 @@ class AuthPlugin extends obsidian.Plugin {
 
   // ── Events ─────────────────────────────────────────────────
   _registerEvents() {
+    const refresh = () => setTimeout(() => this._refreshBadges?.(), 0);
+    this.registerEvent(this.app.workspace.on('layout-change', refresh));
+    this.registerEvent(this.app.workspace.on('active-leaf-change', refresh));
+    this.registerEvent(this.app.metadataCache.on('changed', refresh));
+
     // File open: load entry — use setTimeout(0) so CM has finished
     // initializing the new state before we push the entry into it.
     this.registerEvent(this.app.workspace.on('file-open', async (file) => {
