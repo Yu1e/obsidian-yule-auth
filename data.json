@@ -28,15 +28,18 @@
     "неуточнённое"
   ],
   "offSynonyms": [
+    "off",
     "временно_откл",
     "пауза",
-    "temporary_off"
+    "выкл"
   ],
   "defaultPasteSource": "other",
-  "pasteDialogEnabled": false,
+  "pasteDialogEnabled": true,
   "pasteDialogRestore": true,
-  "pasteMarkNoteDefault": false,
+  "pasteMarkNoteDefault": true,
   "selfTopStripeEnabled": true,
+  "selfBadgeText": "Я что-то здесь вписывала",
+  "stripePlacement": "edge",
   "tagAutoEnabled": true,
   "tagsSelf": [],
   "tagsAi": [],
@@ -76,19 +79,20 @@
   "otherNoteGlowEnabled": true,
   "selfHighlightMode": "gapped",
   "selfCornerStyle": "round",
-  "selfBgEnabled": false,
+  "selfBgEnabled": true,
   "selfBgColors": [
     "#eafbea",
     "#f0fff8"
   ],
   "selfBgOpacity": 100,
-  "selfTextGradient": true,
+  "selfTextGradient": false,
   "selfTextColors": [
     "#206d12",
     "#3d5249"
   ],
   "selfTextOpacity": 100,
   "selfItalic": true,
+  "selfBold": false,
   "selfUnderline": true,
   "selfUnderlineColor": "#f3fcf4",
   "selfUnderlineWidth": 8,
@@ -121,6 +125,7 @@
   ],
   "aiTextOpacity": 100,
   "aiItalic": false,
+  "aiBold": false,
   "aiUnderline": true,
   "aiUnderlineColor": "#fbfaff",
   "aiUnderlineWidth": 8,
@@ -150,6 +155,7 @@
   ],
   "otherTextOpacity": 100,
   "otherItalic": false,
+  "otherBold": false,
   "otherUnderline": true,
   "otherUnderlineColor": "#f0f0db",
   "otherUnderlineWidth": 8,

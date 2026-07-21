@@ -794,46 +794,32 @@ function createEditorExtension(plugin) {
   // Только в окнах заметок (markdown), не в боковых панелях.
   // Прячется при auth: none, выключенном «Отслеживании авторства» и выключенном плагине.
   plugin._refreshBadges = () => {
-    const wanted = new Map();
-    if (plugin.settings.enabled) {
-      for (const leaf of plugin.app.workspace.getLeavesOfType('markdown')) {
+    // 1) Сначала подчистить всё старое: боковые панели, закрытые вкладки, прошлые заметки
+    document.querySelectorAll('.auth-self-frags-badge, .auth-self-top-stripe').forEach(e => e.remove());
+    document.querySelectorAll('.auth-has-self-frags').forEach(e => e.classList.remove('auth-has-self-frags'));
+    if (!plugin.settings.enabled) return;
+    // 2) Затем вставить туда, где нужно — только в окна заметок, по их СОБСТВЕННОМУ содержимому
+    for (const leaf of plugin.app.workspace.getLeavesOfType('markdown')) {
+      try {
         const view = leaf.view;
         const el = view?.contentEl;
-        if (!el) continue;
-        let noteClass = null, fragments = [];
-        const fv = view.editor?.cm?.state?.field?.(field, false);
-        if (fv) {
-          noteClass = fv.noteClass; fragments = fv.fragments || [];
-        } else {
-          const raw = view.file ? plugin.app.metadataCache.getFileCache(view.file)?.frontmatter?.auth : null;
-          noteClass = parseAuthClass(raw, plugin.settings);
-          fragments = parseFragmentTags(typeof view.data === 'string' ? view.data : '', plugin.settings);
-        }
+        if (!el || !view.file) continue;
+        const raw = plugin.app.metadataCache.getFileCache(view.file)?.frontmatter?.auth;
+        const noteClass = parseAuthClass(raw, plugin.settings);
+        if (noteClass === 'none') continue;
+        const text = view.editor?.getValue?.() ?? (typeof view.data === 'string' ? view.data : '');
+        const fragments = parseFragmentTags(text, plugin.settings);
         const selfPresent  = noteClass === 'self' || fragments.some(f => f && f.sourceType === ST.SELF);
-        const otherPresent = (noteClass && noteClass !== 'self' && noteClass !== 'none' && noteClass !== 'tempor_off')
+        const otherPresent = (noteClass && noteClass !== 'self' && noteClass !== 'tempor_off')
                           || fragments.some(f => f && f.sourceType !== ST.SELF);
-        if (noteClass !== 'none' && selfPresent && otherPresent) {
-          wanted.set(el, plugin.settings.selfBadgeText
-            || ((plugin.settings.language === 'en') ? 'My insertions here' : 'Есть мои пометки'));
-        }
-      }
-    }
-    document.querySelectorAll('.auth-self-top-stripe').forEach(b => b.remove());
-    document.querySelectorAll('.auth-self-frags-badge').forEach(b => {
-      if (!wanted.has(b.parentElement)) b.remove();
-    });
-    document.querySelectorAll('.auth-has-self-frags').forEach(e => {
-      if (!wanted.has(e)) e.classList.remove('auth-has-self-frags');
-    });
-    for (const [el, text] of wanted) {
-      el.classList.add('auth-has-self-frags');
-      let b = el.querySelector(':scope > .auth-self-frags-badge');
-      if (!b) {
-        b = document.createElement('div');
+        if (!selfPresent || !otherPresent) continue;
+        el.classList.add('auth-has-self-frags');
+        const b = document.createElement('div');
         b.className = 'auth-self-frags-badge';
+        b.textContent = plugin.settings.selfBadgeText
+          || ((plugin.settings.language === 'en') ? 'My insertions here' : 'Есть мои пометки');
         el.insertBefore(b, el.firstChild);
-      }
-      if (b.textContent !== text) b.textContent = text;
+      } catch {}
     }
   };
 
@@ -1748,8 +1734,10 @@ class AuthPlugin extends obsidian.Plugin {
     this.registerEvent(this.app.workspace.on('file-open', async (file) => {
       if (!file) return;
       await this._loadEntry(file);
-      setTimeout(() => this._loadEntry(file), 0);
-      setTimeout(() => this._loadEntry(file), 150);
+      this._refreshBadges?.();
+      setTimeout(() => { this._loadEntry(file); this._refreshBadges?.(); }, 0);
+      setTimeout(() => { this._loadEntry(file); this._refreshBadges?.(); }, 150);
+      setTimeout(() => this._refreshBadges?.(), 400);
     }));
 
     // Also reload on active-leaf-change for tab switches
