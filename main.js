@@ -1805,7 +1805,17 @@ class AuthPlugin extends obsidian.Plugin {
     // Drop from external apps: capture on window (fires before document/CM6 handlers)
     this._dragFromEditor = false;
     this.registerDomEvent(document, 'dragstart', (e) => {
-      this._dragFromEditor = !!e.target?.closest?.('.cm-content, .cm-editor');
+      // В Live Preview dragstart.target — не .cm-content (CM6 стартует драг из
+      // отдельного слоя), поэтому определяем внутренний драг не по target, а по
+      // наличию непустого выделения в любом markdown-редакторе: когда тащат
+      // текст, выделение есть всегда. Это надёжно и в Live Preview, и в исходнике.
+      let internal = false;
+      this.app.workspace.iterateAllLeaves((leaf) => {
+        if (internal) return;
+        const ed = leaf.view?.editor;
+        if (ed && ed.somethingSelected && ed.somethingSelected()) internal = true;
+      });
+      this._dragFromEditor = internal;
     }, true);
     this.registerDomEvent(document, 'dragend', () => { this._dragFromEditor = false; }, true);
 
